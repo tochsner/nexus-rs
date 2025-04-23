@@ -12,11 +12,25 @@ enum Token<'a> {
 struct Lexer<'a> {
     content: &'a str,
     cursor: usize,
+
+    eos_regex: Regex,
+    comment_regex: Regex,
+    whitespace_regex: Regex,
+    punctuation_regex: Regex,
+    word_regex: Regex,
 }
 
 impl<'a> Lexer<'a> {
     fn new(content: &'a str) -> Self {
-        Self { content, cursor: 0 }
+        Self {
+            content,
+            cursor: 0,
+            eos_regex: Regex::new(r"^;").unwrap(),
+            comment_regex: Regex::new(r"^\[#(?P<comment>[^\]]*)\]").unwrap(),
+            whitespace_regex: Regex::new(r"^[\x00-\x06\t\n ]+").unwrap(),
+            punctuation_regex: Regex::new(r"^[()\[\]{}\/\\,;:=*'`<>~]").unwrap(),
+            word_regex: Regex::new(r"^[^?!.*\x00-\x06\t\n ()\[\]{}\/\\,;:=*'`<>~]*").unwrap(),
+        }
     }
 }
 
@@ -30,33 +44,27 @@ impl<'a> Iterator for Lexer<'a> {
 
         let context = &self.content[self.cursor..];
 
-        let eos_regex = Regex::new(r"^;").unwrap();
-        if let Some(res) = eos_regex.find(&context) {
+        if let Some(res) = self.eos_regex.find(&context) {
             self.cursor += res.len();
             return Some(Token::EOS);
         };
 
-        let comment_regex = Regex::new(r"^\[#(?P<comment>[^\]]*)\]").unwrap();
-        if let Some(res) = comment_regex.captures(&context) {
+        if let Some(res) = self.comment_regex.captures(&context) {
             self.cursor += res.get(0).unwrap().len();
             return Some(Token::Comment(res.name("comment").unwrap().as_str()));
         };
 
-        let whitespace_regex = Regex::new(r"^[\x00-\x06\t\n ]+").unwrap();
-        if let Some(res) = whitespace_regex.find(&context) {
+        if let Some(res) = self.whitespace_regex.find(&context) {
             self.cursor += res.len();
             return Some(Token::Whitespace(res.as_str()));
         };
 
-        let punctuation_regex: Regex = Regex::new(r"^[()\[\]{}\/\\,;:=*'`<>~]").unwrap();
-        if let Some(res) = punctuation_regex.find(&context) {
+        if let Some(res) = self.punctuation_regex.find(&context) {
             self.cursor += res.len();
             return Some(Token::Punctuation(res.as_str()));
         };
 
-        let word_regex: Regex =
-            Regex::new(r"^[^?!.*\x00-\x06\t\n ()\[\]{}\/\\,;:=*'`<>~]*").unwrap();
-        if let Some(res) = word_regex.find(&context) {
+        if let Some(res) = self.word_regex.find(&context) {
             self.cursor += res.len();
             return Some(Token::Word(res.as_str()));
         };
