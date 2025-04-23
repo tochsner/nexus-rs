@@ -29,7 +29,7 @@ impl<'a> Lexer<'a> {
             comment_regex: Regex::new(r"^\[#(?P<comment>[^\]]*)\]").unwrap(),
             whitespace_regex: Regex::new(r"^[\x00-\x06\t\n ]+").unwrap(),
             punctuation_regex: Regex::new(r"^[()\[\]{}\/\\,;:=*'`<>~]").unwrap(),
-            word_regex: Regex::new(r"^[^?!.*\x00-\x06\t\n ()\[\]{}\/\\,;:=*'`<>~]*").unwrap(),
+            word_regex: Regex::new(r"^[^?!.*\x00-\x06\t\n ()\[\]{}\/\\,;:=*'`<>~]+").unwrap(),
         }
     }
 }
