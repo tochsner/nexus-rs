@@ -1,60 +1,34 @@
-use crate::lexer::{self, Lexer, Token};
+use crate::{
+    lexer::{Lexer, Token},
+    nexus::{Nexus, NexusBlock},
+};
 
 #[derive(PartialEq, Debug)]
-enum NexusBlock<'a> {
-    TaxaBlock(usize, Vec<&'a str>),
-    TreesBlock,
-}
-
-impl<'a> NexusBlock<'a> {
-    fn build_taxa_block(
-        dimensions: usize,
-        tax_labels: Vec<&'a str>,
-    ) -> Result<NexusBlock, ParsingError> {
-        if dimensions != tax_labels.len() {
-            Err(ParsingError::TaxaDimensionsMismatch)
-        } else {
-            Ok(NexusBlock::TaxaBlock(dimensions, tax_labels))
-        }
-    }
-}
-
-#[derive(PartialEq, Debug)]
-struct Nexus<'a> {
-    blocks: Vec<NexusBlock<'a>>,
-}
-
-impl<'a> Nexus<'a> {
-    fn new() -> Self {
-        Nexus { blocks: vec![] }
-    }
-}
-
-#[derive(PartialEq, Debug)]
-enum ParsingError {
+pub enum ParsingError {
     MissingNexusTag,
+    MissingEOS,
     InvalidBlock,
     MissingToken(String),
     UnexpectedToken,
     InvalidNumber,
     InvalidList,
     TaxaDimensionsMismatch,
+    UnexpectedFileEnd,
 }
 
-struct NexusParser<'a> {
+pub struct Parser<'a> {
     lexer: Lexer<'a>,
 }
 
-impl<'a> NexusParser<'a> {
-    fn new(lexer: Lexer<'a>) -> Self {
+impl<'a> Parser<'a> {
+    pub fn new(lexer: Lexer<'a>) -> Self {
         Self { lexer }
     }
 
-    fn parse(&mut self) -> Result<Nexus, ParsingError> {
-        self.parse_nexus_tag()?;
-        self.parse_and_ignore_whitespace();
-
+    pub fn parse(&mut self) -> Result<Nexus, ParsingError> {
         let mut nexus = Nexus::new();
+
+        self.parse_nexus_tag()?;
 
         while let Some(block) = self.parse_block()? {
             nexus.blocks.push(block);
@@ -63,8 +37,9 @@ impl<'a> NexusParser<'a> {
         Ok(nexus)
     }
 
-    fn parse_nexus_tag(&mut self) -> Result<(), ParsingError> {
-        self.try_and_parse_expected_word("#NEXUS")
+    fn parse_nexus_tag(&mut self) -> Result<&str, ParsingError> {
+        self.parse_keyword("#NEXUS")
+            .map_err(|_| ParsingError::MissingNexusTag)
     }
 
     fn parse_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
@@ -72,74 +47,66 @@ impl<'a> NexusParser<'a> {
             return Ok(None);
         }
 
-        self.parse_and_ignore_whitespace();
-        self.try_and_parse_expected_word("begin")?;
-        self.parse_and_ignore_whitespace();
+        self.try_and_parse_keyword("begin")?;
 
-        return Ok(self.parse_taxa_block()?);
+        let mut first_block_error: Option<ParsingError> = None;
 
-        if let Ok(block) = self.parse_taxa_block() {
-            return Ok(block);
+        match self.try_and_parse_taxa_block() {
+            Ok(block) => return Ok(block),
+            Err(error) if first_block_error == None => first_block_error = Some(error),
+            _ => {}
         }
 
-        if let Ok(block) = self.parse_trees_block() {
-            return Ok(block);
+        match self.try_and_parse_trees_block() {
+            Ok(block) => return Ok(block),
+            Err(error) if first_block_error == None => first_block_error = Some(error),
+            _ => {}
         }
 
-        Err(ParsingError::InvalidBlock)
+        Err(first_block_error.unwrap_or(ParsingError::InvalidBlock))
     }
 
-    fn parse_taxa_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
-        self.try_and_parse_expected_word("taxa")?;
-        self.parse_and_ignore_whitespace();
-        self.try_and_parse_expected_eos()?;
-        self.parse_and_ignore_whitespace();
+    fn try_and_parse_taxa_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
+        self.parse_keyword("taxa")?;
+        self.parse_eos()?;
 
-        self.try_and_parse_expected_word("Dimensions")?;
-        self.parse_and_ignore_whitespace();
+        self.parse_keyword("Dimensions")?;
         let dimension = self.parse_uint()?;
-        self.try_and_parse_expected_eos()?;
+        self.parse_eos()?;
 
-        self.parse_and_ignore_whitespace();
-        self.try_and_parse_expected_word("TaxLabels")?;
-        self.parse_and_ignore_whitespace();
+        self.parse_keyword("TaxLabels")?;
         let taxa_labels = self.parse_words()?;
-        self.try_and_parse_expected_eos()?;
+        self.parse_eos()?;
 
-        self.parse_and_ignore_whitespace();
-        self.try_and_parse_expected_word("end")?;
-        self.parse_and_ignore_whitespace();
-        self.try_and_parse_expected_eos()?;
+        self.parse_keyword("end")?;
+        self.parse_eos()?;
 
         Ok(Some(NexusBlock::build_taxa_block(dimension, taxa_labels)?))
     }
 
-    fn parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
-        self.try_and_parse_expected_word("trees")?;
-        self.parse_and_ignore_whitespace();
-        self.try_and_parse_expected_eos()?;
-        self.parse_and_ignore_whitespace();
+    fn try_and_parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
+        self.parse_keyword("trees")?;
+        self.parse_eos()?;
 
-        self.try_and_parse_expected_word("end")?;
-        self.parse_and_ignore_whitespace();
-        self.try_and_parse_expected_eos()?;
+        self.parse_keyword("end")?;
+        self.parse_eos()?;
 
         Ok(Some(NexusBlock::TreesBlock))
     }
 
-    fn parse_and_ignore_whitespace(&mut self) {
-        while let Some(Token::Whitespace(_)) = &self.lexer.peek() {
-            self.lexer.next();
-        }
-    }
-
     fn parse_uint(&mut self) -> Result<usize, ParsingError> {
-        if let Some(Token::Word(word)) = self.lexer.next() {
-            if let Ok(num) = word.parse() {
-                return Ok(num);
-            }
-        }
-        Err(ParsingError::InvalidNumber)
+        self.parse_and_ignore_whitespace();
+
+        let Some(Token::Word(word)) = self.lexer.next() else {
+            return Err(ParsingError::InvalidNumber);
+        };
+
+        let Ok(num) = word.parse() else {
+            return Err(ParsingError::InvalidNumber);
+        };
+
+        self.parse_and_ignore_whitespace();
+        return Ok(num);
     }
 
     fn parse_words(&mut self) -> Result<Vec<&'a str>, ParsingError> {
@@ -147,47 +114,69 @@ impl<'a> NexusParser<'a> {
 
         while self.lexer.peek() != Some(Token::EOS) {
             self.parse_and_ignore_whitespace();
-            match self.lexer.next() {
-                Some(Token::Word(word)) => labels.push(word),
+
+            match self.parse_word() {
+                Ok(word) => labels.push(word),
                 _ => return Err(ParsingError::InvalidList),
             }
+
             self.parse_and_ignore_whitespace();
         }
 
         Ok(labels)
     }
 
-    fn try_and_parse_expected<F>(&mut self, predicate: F) -> Result<(), ParsingError>
-    where
-        F: Fn(Option<Token>) -> bool,
-    {
-        if predicate(self.lexer.peek()) {
-            self.lexer.next();
-            Ok(())
-        } else {
-            Err(ParsingError::UnexpectedToken)
+    fn parse_eos(&mut self) -> Result<(), ParsingError> {
+        match self.lexer.next() {
+            Some(Token::EOS) => Ok(()),
+            _ => Err(ParsingError::MissingEOS),
         }
     }
 
-    fn try_and_parse_expected_word(&mut self, expected_word: &str) -> Result<(), ParsingError> {
-        self.try_and_parse_expected(|token| {
-            if let Some(Token::Word(word)) = token {
-                word.eq_ignore_ascii_case(expected_word)
-            } else {
-                false
+    fn parse_keyword(&mut self, expected_word: &str) -> Result<&'a str, ParsingError> {
+        self.parse_and_ignore_whitespace();
+        match self.lexer.next() {
+            Some(Token::Word(word)) if word.eq_ignore_ascii_case(expected_word) => {
+                self.parse_and_ignore_whitespace();
+                Ok(word)
             }
-        })
-        .map_err(|_| ParsingError::MissingToken(String::from(expected_word)))
+            _ => Err(ParsingError::MissingToken(String::from(expected_word))),
+        }
     }
 
-    fn try_and_parse_expected_eos(&mut self) -> Result<(), ParsingError> {
-        self.try_and_parse_expected(|token| {
-            if let Some(Token::EOS) = token {
-                true
-            } else {
-                false
+    fn try_and_parse_keyword(&mut self, expected_word: &str) -> Result<(), ParsingError> {
+        self.parse_and_ignore_whitespace();
+
+        match self.lexer.peek() {
+            Some(Token::Word(word)) if word.eq_ignore_ascii_case(expected_word) => {
+                self.lexer.next();
+                self.parse_and_ignore_whitespace();
+                Ok(())
+            },
+            _ => Err(ParsingError::MissingToken(String::from(expected_word)))
+        }
+    }
+
+    fn parse_word(&mut self) -> Result<&'a str, ParsingError> {
+        match self.lexer.next() {
+            Some(Token::Word(word)) => Ok(word),
+            Some(Token::Punctuation("'")) => {
+                let word = self.parse_word()?;
+
+                match self.lexer.next() {
+                    Some(Token::Punctuation("'")) => Ok(word),
+                    _ => Err(ParsingError::UnexpectedToken),
+                }
             }
-        })
+            Some(_) => Err(ParsingError::UnexpectedToken),
+            None => Err(ParsingError::UnexpectedFileEnd),
+        }
+    }
+
+    fn parse_and_ignore_whitespace(&mut self) {
+        while let Some(Token::Whitespace(_)) = &self.lexer.peek() {
+            self.lexer.next();
+        }
     }
 }
 
@@ -199,13 +188,31 @@ mod tests {
     fn test_empty_nexus() {
         let text = "#NEXUS";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
+        let mut parser = Parser::new(lexer);
         assert_eq!(parser.parse(), Ok(Nexus::new()));
 
         let text = "#nexus";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
+        let mut parser = Parser::new(lexer);
         assert_eq!(parser.parse(), Ok(Nexus::new()));
+
+        let text = "#notnexus";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse(), Err(ParsingError::MissingNexusTag));
+    }
+
+    #[test]
+    fn test_invalid_block() {
+        let text = "#NEXUS
+        BEG;
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(
+            parser.parse(),
+            Err(ParsingError::MissingToken(String::from("begin")))
+        );
     }
 
     // #[test]
@@ -214,7 +221,7 @@ mod tests {
         BEGIN TAXA;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
+        let mut parser = Parser::new(lexer);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
@@ -228,10 +235,10 @@ mod tests {
         let text = "#NEXUS
         BEGIN taxa;
         DIMENSIONS 2;
-        TAXLABELS Apes Humans;
+        TAXLABELS Apes 'Humans';
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
+        let mut parser = Parser::new(lexer);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
@@ -247,29 +254,26 @@ mod tests {
         DIMENSIONS 10;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
+        let mut parser = Parser::new(lexer);
         assert_eq!(
             parser.parse(),
             Err(ParsingError::MissingToken(String::from("TaxLabels")))
         );
-        
+
         let text = "#NEXUS
         BEGIN taxa;
         DIMENSIONS;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Err(ParsingError::InvalidNumber)
-        );
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse(), Err(ParsingError::InvalidNumber));
 
         let text = "#NEXUS
         BEGIN taxa;
         TAXLABELS Apes Humans;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
+        let mut parser = Parser::new(lexer);
         assert_eq!(
             parser.parse(),
             Err(ParsingError::MissingToken(String::from("Dimensions")))
@@ -281,11 +285,8 @@ mod tests {
         TAXLABELS;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Err(ParsingError::UnexpectedToken)
-        );
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse(), Err(ParsingError::MissingEOS));
     }
 
     #[test]
@@ -296,10 +297,7 @@ mod tests {
         TAXLABELS human ape gorilla;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = NexusParser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Err(ParsingError::TaxaDimensionsMismatch)
-        );
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse(), Err(ParsingError::TaxaDimensionsMismatch));
     }
 }
