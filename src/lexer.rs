@@ -1,7 +1,9 @@
+use std::iter::Peekable;
+
 use regex::Regex;
 
 #[derive(Debug, PartialEq)]
-enum Token<'a> {
+pub enum Token<'a> {
     EOS,
     Comment(&'a str),
     Whitespace(&'a str),
@@ -9,7 +11,7 @@ enum Token<'a> {
     Word(&'a str),
 }
 
-struct Lexer<'a> {
+pub struct Lexer<'a> {
     content: &'a str,
     cursor: usize,
 
@@ -21,7 +23,7 @@ struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    fn new(content: &'a str) -> Self {
+    pub fn new(content: &'a str) -> Self {
         Self {
             content,
             cursor: 0,
@@ -32,44 +34,49 @@ impl<'a> Lexer<'a> {
             word_regex: Regex::new(r"^[^?!.*\x00-\x06\t\n ()\[\]{}\/\\,;:=*'`<>~]+").unwrap(),
         }
     }
+
+    fn next_token_and_cursor(&mut self) -> (Option<Token<'a>>, usize) {
+        if self.content.len() <= self.cursor {
+            return (None, self.cursor);
+        }
+
+        let context = &self.content[self.cursor..];
+
+        if let Some(res) = self.eos_regex.find(&context) {
+            return (Some(Token::EOS), self.cursor + res.len())
+        };
+
+        if let Some(res) = self.comment_regex.captures(&context) {
+            return (Some(Token::Comment(res.name("comment").unwrap().as_str())), self.cursor + res.get(0).unwrap().len())
+        };
+
+        if let Some(res) = self.whitespace_regex.find(&context) {
+            return (Some(Token::Whitespace(res.as_str())), self.cursor + res.len())
+        };
+
+        if let Some(res) = self.punctuation_regex.find(&context) {
+            return (Some(Token::Punctuation(res.as_str())), self.cursor + res.len())
+        };
+
+        if let Some(res) = self.word_regex.find(&context) {
+            return (Some(Token::Word(res.as_str())), self.cursor + res.len())
+        };
+
+        (None, self.cursor)
+    }
+
+    pub fn peek(&mut self) -> Option<Token> {
+        self.next_token_and_cursor().0
+    }
 }
 
 impl<'a> Iterator for Lexer<'a> {
     type Item = Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.content.len() <= self.cursor {
-            return None;
-        }
-
-        let context = &self.content[self.cursor..];
-
-        if let Some(res) = self.eos_regex.find(&context) {
-            self.cursor += res.len();
-            return Some(Token::EOS);
-        };
-
-        if let Some(res) = self.comment_regex.captures(&context) {
-            self.cursor += res.get(0).unwrap().len();
-            return Some(Token::Comment(res.name("comment").unwrap().as_str()));
-        };
-
-        if let Some(res) = self.whitespace_regex.find(&context) {
-            self.cursor += res.len();
-            return Some(Token::Whitespace(res.as_str()));
-        };
-
-        if let Some(res) = self.punctuation_regex.find(&context) {
-            self.cursor += res.len();
-            return Some(Token::Punctuation(res.as_str()));
-        };
-
-        if let Some(res) = self.word_regex.find(&context) {
-            self.cursor += res.len();
-            return Some(Token::Word(res.as_str()));
-        };
-
-        None
+        let (next_token, next_cursor) = self.next_token_and_cursor();
+        self.cursor = next_cursor;
+        next_token
     }
 }
 
