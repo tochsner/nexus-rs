@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{fmt::Display, iter::Peekable};
 
 use regex::Regex;
 
@@ -9,6 +9,18 @@ pub enum Token<'a> {
     Whitespace(&'a str),
     Punctuation(&'a str),
     Word(&'a str),
+}
+
+impl<'a> Display for Token<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::EOS =>  write!(f, "EOS"),
+            Token::Comment(comment) =>  write!(f, "Comment: {}", comment),
+            Token::Whitespace(_) =>  write!(f, "Whitespace"),
+            Token::Punctuation(punctuation) =>  write!(f, "Punctuation: {}", punctuation),
+            Token::Word(word) =>  write!(f, "Word: {}", word),
+        }
+    }
 }
 
 pub struct Lexer<'a> {
@@ -67,6 +79,14 @@ impl<'a> Lexer<'a> {
 
     pub fn peek(&mut self) -> Option<Token> {
         self.next_token_and_cursor().0
+    }
+
+    pub fn cursor(&self) -> usize {
+        self.cursor
+    }
+
+    pub fn slice(&self, from: usize) -> &'a str {
+        &self.content[from..self.cursor]
     }
 }
 

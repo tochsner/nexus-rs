@@ -161,10 +161,30 @@ impl<'a> Parser<'a> {
         match self.lexer.next() {
             Some(Token::Word(word)) => Ok(word),
             Some(Token::Punctuation("'")) => {
+                let start_cursor = self.lexer.cursor();
                 let word = self.parse_word()?;
 
                 match self.lexer.next() {
-                    Some(Token::Punctuation("'")) => Ok(word),
+                    Some(Token::Punctuation("'")) => {
+                        match self.lexer.peek() {
+                            Some(Token::Punctuation("'")) => {
+                                let _ = self.lexer.next();
+                                
+                                let Some(Token::Word(_)) = self.lexer.next() else {
+                                    return Err(ParsingError::UnexpectedToken);
+                                };
+
+                                let concatenated_word = self.lexer.slice(start_cursor);
+
+                                let Some(Token::Punctuation("'")) = self.lexer.next() else {
+                                    return Err(ParsingError::UnexpectedToken);
+                                };
+                                
+                                Ok(&concatenated_word)
+                            },
+                            _ => Ok(word)
+                        }
+                    },
                     _ => Err(ParsingError::UnexpectedToken),
                 }
             }
@@ -234,15 +254,15 @@ mod tests {
     fn test_taxa_block() {
         let text = "#NEXUS
         BEGIN taxa;
-        DIMENSIONS 2;
-        TAXLABELS Apes 'Humans';
+        DIMENSIONS 4;
+        TAXLABELS Apes 'Humans' 'Gor' 'Gor''illas';
         END;";
         let lexer = Lexer::new(text);
         let mut parser = Parser::new(lexer);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
-                blocks: vec![NexusBlock::TaxaBlock(2, vec!["Apes", "Humans"])]
+                blocks: vec![NexusBlock::TaxaBlock(4, vec!["Apes", "Humans", "Gor", "Gor''illas"])]
             })
         );
     }
