@@ -14,11 +14,11 @@ pub enum Token<'a> {
 impl<'a> Display for Token<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::EOS =>  write!(f, "EOS"),
-            Token::Comment(comment) =>  write!(f, "Comment: {}", comment),
-            Token::Whitespace(_) =>  write!(f, "Whitespace"),
-            Token::Punctuation(punctuation) =>  write!(f, "Punctuation: {}", punctuation),
-            Token::Word(word) =>  write!(f, "Word: {}", word),
+            Token::EOS => write!(f, "EOS"),
+            Token::Comment(comment) => write!(f, "Comment: {}", comment),
+            Token::Whitespace(_) => write!(f, "Whitespace"),
+            Token::Punctuation(punctuation) => write!(f, "Punctuation: {}", punctuation),
+            Token::Word(word) => write!(f, "Word: {}", word),
         }
     }
 }
@@ -55,23 +55,32 @@ impl<'a> Lexer<'a> {
         let context = &self.content[self.cursor..];
 
         if let Some(res) = self.eos_regex.find(&context) {
-            return (Some(Token::EOS), self.cursor + res.len())
+            return (Some(Token::EOS), self.cursor + res.len());
         };
 
         if let Some(res) = self.comment_regex.captures(&context) {
-            return (Some(Token::Comment(res.name("comment").unwrap().as_str())), self.cursor + res.get(0).unwrap().len())
+            return (
+                Some(Token::Comment(res.name("comment").unwrap().as_str())),
+                self.cursor + res.get(0).unwrap().len(),
+            );
         };
 
         if let Some(res) = self.whitespace_regex.find(&context) {
-            return (Some(Token::Whitespace(res.as_str())), self.cursor + res.len())
+            return (
+                Some(Token::Whitespace(res.as_str())),
+                self.cursor + res.len(),
+            );
         };
 
         if let Some(res) = self.punctuation_regex.find(&context) {
-            return (Some(Token::Punctuation(res.as_str())), self.cursor + res.len())
+            return (
+                Some(Token::Punctuation(res.as_str())),
+                self.cursor + res.len(),
+            );
         };
 
         if let Some(res) = self.word_regex.find(&context) {
-            return (Some(Token::Word(res.as_str())), self.cursor + res.len())
+            return (Some(Token::Word(res.as_str())), self.cursor + res.len());
         };
 
         (None, self.cursor)
@@ -85,7 +94,11 @@ impl<'a> Lexer<'a> {
         self.cursor
     }
 
-    pub fn slice(&self, from: usize) -> &'a str {
+    pub fn slice(&self, from: usize, to: usize) -> &'a str {
+        &self.content[from..to]
+    }
+
+    pub fn slice_from(&self, from: usize) -> &'a str {
         &self.content[from..self.cursor]
     }
 }

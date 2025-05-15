@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
             return Ok(None);
         }
 
-        self.try_and_parse_keyword("begin")?;
+        self.parse_keyword("begin")?;
 
         let mut first_block_error: Option<ParsingError> = None;
 
@@ -67,7 +67,7 @@ impl<'a> Parser<'a> {
     }
 
     fn try_and_parse_taxa_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
-        self.parse_keyword("taxa")?;
+        self.try_and_parse_keyword("taxa")?;
         self.parse_eos()?;
 
         self.parse_keyword("Dimensions")?;
@@ -85,13 +85,37 @@ impl<'a> Parser<'a> {
     }
 
     fn try_and_parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
-        self.parse_keyword("trees")?;
+        self.try_and_parse_keyword("trees")?;
         self.parse_eos()?;
 
         self.parse_keyword("end")?;
         self.parse_eos()?;
 
         Ok(Some(NexusBlock::TreesBlock))
+    }
+
+    fn parse_words(&mut self) -> Result<Vec<&'a str>, ParsingError> {
+        let mut labels = vec![];
+
+        while self.lexer.peek() != Some(Token::EOS) {
+            match self.parse_word() {
+                Ok(word) => labels.push(word),
+                _ => return Err(ParsingError::InvalidList),
+            }
+        }
+
+        Ok(labels)
+    }
+
+    // atomic parsers
+
+    fn parse_eos(&mut self) -> Result<(), ParsingError> {
+        self.parse_and_ignore_whitespace();
+
+        match self.lexer.next() {
+            Some(Token::EOS) => Ok(()),
+            _ => Err(ParsingError::MissingEOS),
+        }
     }
 
     fn parse_uint(&mut self) -> Result<usize, ParsingError> {
@@ -109,32 +133,9 @@ impl<'a> Parser<'a> {
         return Ok(num);
     }
 
-    fn parse_words(&mut self) -> Result<Vec<&'a str>, ParsingError> {
-        let mut labels = vec![];
-
-        while self.lexer.peek() != Some(Token::EOS) {
-            self.parse_and_ignore_whitespace();
-
-            match self.parse_word() {
-                Ok(word) => labels.push(word),
-                _ => return Err(ParsingError::InvalidList),
-            }
-
-            self.parse_and_ignore_whitespace();
-        }
-
-        Ok(labels)
-    }
-
-    fn parse_eos(&mut self) -> Result<(), ParsingError> {
-        match self.lexer.next() {
-            Some(Token::EOS) => Ok(()),
-            _ => Err(ParsingError::MissingEOS),
-        }
-    }
-
     fn parse_keyword(&mut self, expected_word: &str) -> Result<&'a str, ParsingError> {
         self.parse_and_ignore_whitespace();
+
         match self.lexer.next() {
             Some(Token::Word(word)) if word.eq_ignore_ascii_case(expected_word) => {
                 self.parse_and_ignore_whitespace();
@@ -158,32 +159,34 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_word(&mut self) -> Result<&'a str, ParsingError> {
+        self.parse_and_ignore_whitespace();
+
         match self.lexer.next() {
             Some(Token::Word(word)) => Ok(word),
+            // the next token is a quotation mark, we have a quoted word
             Some(Token::Punctuation("'")) => {
                 let start_cursor = self.lexer.cursor();
-                let word = self.parse_word()?;
 
-                let Some(Token::Punctuation("'")) = self.lexer.next() else {
-                    return Err(ParsingError::UnexpectedToken);
-                };
+                loop {
+                    match self.lexer.next() {
+                        Some(Token::Word(_)) => continue,
+                        Some(Token::Punctuation("'")) => {
+                            // we have two cases:
+                            //      either, this is the final quotation mark,
+                            //      or, there is a pair of quotation marks
+                            if self.lexer.peek() == Some(Token::Punctuation("'")) {
+                                self.lexer.next();
+                                continue;
+                            }
 
-                let Some(Token::Punctuation("'")) = self.lexer.peek() else {
-                    return Ok(word);
-                };
-                let _ = self.lexer.next();
-
-                let Some(Token::Word(_)) = self.lexer.next() else {
-                    return Err(ParsingError::UnexpectedToken);
-                };
-
-                let concatenated_word = self.lexer.slice(start_cursor);
-
-                let Some(Token::Punctuation("'")) = self.lexer.next() else {
-                    return Err(ParsingError::UnexpectedToken);
-                };
-
-                Ok(&concatenated_word)
+                            // the word is finished, we return the word without the last quotation mark
+                            let concatenated_word =
+                                self.lexer.slice(start_cursor, self.lexer.cursor() - 1);
+                            return Ok(concatenated_word);
+                        }
+                        _ => return Err(ParsingError::UnexpectedToken),
+                    }
+                }
             }
             Some(_) => Err(ParsingError::UnexpectedToken),
             None => Err(ParsingError::UnexpectedFileEnd),
@@ -251,8 +254,8 @@ mod tests {
     fn test_taxa_block() {
         let text = "#NEXUS
         BEGIN taxa;
-        DIMENSIONS 4;
-        TAXLABELS Apes 'Humans' 'Gor' 'Gor''illas';
+        DIMENSIONS 5;
+        TAXLABELS Apes 'Humans' 'Gor' 'Gor''illas' 'Gor''ill''as';
         END;";
         let lexer = Lexer::new(text);
         let mut parser = Parser::new(lexer);
@@ -260,8 +263,8 @@ mod tests {
             parser.parse(),
             Ok(Nexus {
                 blocks: vec![NexusBlock::TaxaBlock(
-                    4,
-                    vec!["Apes", "Humans", "Gor", "Gor''illas"]
+                    5,
+                    vec!["Apes", "Humans", "Gor", "Gor''illas", "Gor''ill''as"]
                 )]
             })
         );
