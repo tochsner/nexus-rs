@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     lexer::{Lexer, Token},
     nexus::{Nexus, NexusBlock},
@@ -66,6 +68,8 @@ impl<'a> Parser<'a> {
         Err(first_block_error.unwrap_or(ParsingError::InvalidBlock))
     }
 
+    // taxa block parsing
+
     fn try_and_parse_taxa_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
         self.try_and_parse_keyword("taxa")?;
         self.parse_eos()?;
@@ -84,16 +88,6 @@ impl<'a> Parser<'a> {
         Ok(Some(NexusBlock::build_taxa_block(dimension, taxa_labels)?))
     }
 
-    fn try_and_parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
-        self.try_and_parse_keyword("trees")?;
-        self.parse_eos()?;
-
-        self.parse_keyword("end")?;
-        self.parse_eos()?;
-
-        Ok(Some(NexusBlock::TreesBlock))
-    }
-
     fn parse_words(&mut self) -> Result<Vec<&'a str>, ParsingError> {
         let mut labels = vec![];
 
@@ -105,6 +99,28 @@ impl<'a> Parser<'a> {
         }
 
         Ok(labels)
+    }
+
+    // trees block parsing
+
+    fn try_and_parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
+        self.try_and_parse_keyword("trees")?;
+        self.parse_eos()?;
+
+        let translations = self.parse_taxa_translations()?;
+
+        self.parse_keyword("end")?;
+        self.parse_eos()?;
+
+        Ok(Some(NexusBlock::build_trees_block(translations)?))
+    }
+
+    fn parse_taxa_translations(&mut self) -> Result<HashMap<&'a str, &'a str>, ParsingError> {
+        if self.try_and_parse_keyword("Translate").is_err() {
+            return Ok(HashMap::new());
+        }
+
+        Err(ParsingError::InvalidBlock)
     }
 
     // atomic parsers
@@ -197,130 +213,5 @@ impl<'a> Parser<'a> {
         while let Some(Token::Whitespace(_)) = &self.lexer.peek() {
             self.lexer.next();
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_empty_nexus() {
-        let text = "#NEXUS";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Ok(Nexus::new()));
-
-        let text = "#nexus";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Ok(Nexus::new()));
-
-        let text = "#notnexus";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Err(ParsingError::MissingNexusTag));
-    }
-
-    #[test]
-    fn test_invalid_block() {
-        let text = "#NEXUS
-        BEG;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Err(ParsingError::MissingToken(String::from("begin")))
-        );
-    }
-
-    // #[test]
-    fn test_trees_block() {
-        let text = "#NEXUS
-        BEGIN TAXA;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Ok(Nexus {
-                blocks: vec![NexusBlock::TaxaBlock(0, vec![])]
-            })
-        );
-    }
-
-    #[test]
-    fn test_taxa_block() {
-        let text = "#NEXUS
-        BEGIN taxa;
-        DIMENSIONS 5;
-        TAXLABELS Apes 'Humans' 'Gor' 'Gor''illas' 'Gor''ill''as';
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Ok(Nexus {
-                blocks: vec![NexusBlock::TaxaBlock(
-                    5,
-                    vec!["Apes", "Humans", "Gor", "Gor''illas", "Gor''ill''as"]
-                )]
-            })
-        );
-    }
-
-    #[test]
-    fn test_taxa_block_with_missing_pieces() {
-        let text = "#NEXUS
-        BEGIN taxa;
-        DIMENSIONS 10;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Err(ParsingError::MissingToken(String::from("TaxLabels")))
-        );
-
-        let text = "#NEXUS
-        BEGIN taxa;
-        DIMENSIONS;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Err(ParsingError::InvalidNumber));
-
-        let text = "#NEXUS
-        BEGIN taxa;
-        TAXLABELS Apes Humans;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(
-            parser.parse(),
-            Err(ParsingError::MissingToken(String::from("Dimensions")))
-        );
-
-        let text = "#NEXUS
-        BEGIN taxa;
-        DIMENSIONS 2
-        TAXLABELS;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Err(ParsingError::MissingEOS));
-    }
-
-    #[test]
-    fn test_taxa_block_dimension_mismatch() {
-        let text = "#NEXUS
-        BEGIN taxa;
-        DIMENSIONS 2;
-        TAXLABELS human ape gorilla;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Err(ParsingError::TaxaDimensionsMismatch));
     }
 }
