@@ -93,7 +93,10 @@ impl<'a> Parser<'a> {
         while self.lexer.peek() != Some(Token::EOS) {
             match self.parse_word() {
                 Ok(word) => labels.push(word),
-                _ => return Err(ParsingError::InvalidList),
+                a => {
+                    dbg!(a);
+                    return Err(ParsingError::InvalidList);
+                }
             }
         }
 
@@ -154,7 +157,7 @@ impl<'a> Parser<'a> {
                         translation_start = self.lexer.cursor();
                     }
                 }
-                None => return Err(ParsingError::InvalidTranslation), // we reached the line end
+                None => return Err(ParsingError::UnexpectedFileEnd),
                 _ => translation_end = self.lexer.cursor(),
             };
         }
@@ -223,7 +226,6 @@ impl<'a> Parser<'a> {
 
                 loop {
                     match self.lexer.next() {
-                        Some(Token::Word(_)) => continue,
                         Some(Token::Punctuation("'")) => {
                             // we have two cases:
                             //      either, this is the final quotation mark,
@@ -238,7 +240,8 @@ impl<'a> Parser<'a> {
                                 self.lexer.slice(start_cursor, self.lexer.cursor() - 1);
                             return Ok(concatenated_word);
                         }
-                        _ => return Err(ParsingError::UnexpectedToken),
+                        None => return Err(ParsingError::UnexpectedFileEnd),
+                        _ => continue,
                     }
                 }
             }

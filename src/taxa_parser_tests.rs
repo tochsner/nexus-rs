@@ -79,4 +79,58 @@ mod tests {
         let mut parser = Parser::new(lexer);
         assert_eq!(parser.parse(), Err(ParsingError::TaxaDimensionsMismatch));
     }
+
+    #[test]
+    fn test_taxa_block_with_empty_labels() {
+        let text = "#NEXUS
+        BEGIN taxa;
+        DIMENSIONS 0;
+        TAXLABELS;
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(
+            parser.parse(),
+            Ok(Nexus {
+                blocks: vec![NexusBlock::TaxaBlock(0, vec![])]
+            })
+        );
+    }
+
+    #[test]
+    fn test_taxa_block_with_special_characters() {
+        let text = "#NEXUS
+        BEGIN taxa;
+        DIMENSIONS 3;
+        TAXLABELS 'Species@1' 'Species#2' 'Species$3';
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(
+            parser.parse(),
+            Ok(Nexus {
+                blocks: vec![NexusBlock::TaxaBlock(
+                    3,
+                    vec!["Species@1", "Species#2", "Species$3"]
+                )]
+            })
+        );
+    }
+
+    #[test]
+    fn test_taxa_block_with_whitespace_labels() {
+        let text = "#NEXUS
+        BEGIN taxa;
+        DIMENSIONS 2;
+        TAXLABELS 'Species 1' 'Species 2';
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(
+            parser.parse(),
+            Ok(Nexus {
+                blocks: vec![NexusBlock::TaxaBlock(2, vec!["Species 1", "Species 2"])]
+            })
+        );
+    }
 }
