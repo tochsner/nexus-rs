@@ -7,16 +7,21 @@ use crate::{
 
 #[derive(PartialEq, Debug)]
 pub enum ParsingError {
+    // misc
     MissingNexusTag,
     MissingEOS,
     InvalidBlock,
     MissingToken(String),
     UnexpectedToken,
     InvalidNumber,
+    UnexpectedFileEnd,
+    // taxa block
     InvalidList,
     TaxaDimensionsMismatch,
-    UnexpectedFileEnd,
+    // trees block
     InvalidTranslation,
+    DuplicateTranslations,
+    TranslationForUnknownTaxa,
 }
 
 pub struct Parser<'a> {
@@ -29,15 +34,14 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<Nexus, ParsingError> {
-        let mut nexus = Nexus::new();
-
         self.parse_nexus_tag()?;
 
+        let mut blocks: Vec<NexusBlock<'a>> = vec![];
         while let Some(block) = self.parse_block()? {
-            nexus.blocks.push(block);
+            blocks.push(block);
         }
 
-        Ok(nexus)
+        Nexus::build(blocks)
     }
 
     fn parse_nexus_tag(&mut self) -> Result<&str, ParsingError> {
@@ -132,7 +136,10 @@ impl<'a> Parser<'a> {
                         s.parse_eos()?;
                         Ok(taxa_name)
                     }) {
-                        translations.insert(translated_taxa_name, actual_taxa_name);
+                        if translations.insert(translated_taxa_name, actual_taxa_name) != None {
+                            // there is already a translation with this key
+                            return Err(ParsingError::DuplicateTranslations);
+                        }
                         return Ok(translations);
                     }
 

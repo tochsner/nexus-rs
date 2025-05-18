@@ -2,7 +2,11 @@
 mod tests {
     use std::collections::HashMap;
 
-    use crate::{lexer::Lexer, nexus::NexusBlock, parser::Parser};
+    use crate::{
+        lexer::Lexer,
+        nexus::NexusBlock,
+        parser::{Parser, ParsingError},
+    };
 
     #[test]
     fn test_translations_block() {
@@ -35,5 +39,58 @@ mod tests {
                 ("Schimpansen", "Chimpanz''ee"),
             ])))
         );
+    }
+
+    #[test]
+    fn test_duplicate_translations() {
+        let text = "#NEXUS
+        BEGIN taxa;
+            DIMENSIONS 2;
+            TAXLABELS Apes Humans;
+        END;
+
+        BEGIN trees;
+            Translate
+                Affen Apes,
+                Affen Humans;
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse(), Err(ParsingError::DuplicateTranslations));
+    }
+
+    #[test]
+    fn test_multiple_translations_for_taxa() {
+        let text = "#NEXUS
+        BEGIN taxa;
+            DIMENSIONS 2;
+            TAXLABELS Apes Humans;
+        END;
+
+        BEGIN trees;
+            Translate
+                Affen Apes,
+                Affen2 Apes,
+                Menschen Humans;
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse(), Err(ParsingError::DuplicateTranslations));
+    }
+
+    #[test]
+    fn test_translations_for_unknown_taxa() {
+        let text = "#NEXUS
+        BEGIN taxa;
+            DIMENSIONS 2;
+            TAXLABELS Apes Humans;
+        END;
+
+        BEGIN trees;
+            Translate Gorillas Gorillas;
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse(), Err(ParsingError::TranslationForUnknownTaxa));
     }
 }

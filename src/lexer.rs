@@ -102,10 +102,6 @@ impl<'a> Lexer<'a> {
         &self.content[from..to]
     }
 
-    pub fn slice_from(&self, from: usize) -> &'a str {
-        &self.content[from..self.cursor]
-    }
-
     pub fn slice_from_to(&self, from: usize, to: usize) -> &'a str {
         &self.content[from..to]
     }
