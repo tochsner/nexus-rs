@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter::Peekable};
+use std::fmt::Display;
 
 use regex::Regex;
 
@@ -94,12 +94,20 @@ impl<'a> Lexer<'a> {
         self.cursor
     }
 
+    pub fn set_cursor(&mut self, new_cursor: usize) {
+        self.cursor = new_cursor;
+    }
+
     pub fn slice(&self, from: usize, to: usize) -> &'a str {
         &self.content[from..to]
     }
 
     pub fn slice_from(&self, from: usize) -> &'a str {
         &self.content[from..self.cursor]
+    }
+
+    pub fn slice_from_to(&self, from: usize, to: usize) -> &'a str {
+        &self.content[from..to]
     }
 }
 

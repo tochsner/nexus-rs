@@ -16,6 +16,7 @@ pub enum ParsingError {
     InvalidList,
     TaxaDimensionsMismatch,
     UnexpectedFileEnd,
+    InvalidTranslation,
 }
 
 pub struct Parser<'a> {
@@ -45,33 +46,27 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
+        self.parse_and_ignore_whitespace();
+
         if self.lexer.peek() == None {
             return Ok(None);
         }
 
         self.parse_keyword("begin")?;
 
-        let mut first_block_error: Option<ParsingError> = None;
-
-        match self.try_and_parse_taxa_block() {
-            Ok(block) => return Ok(block),
-            Err(error) if first_block_error == None => first_block_error = Some(error),
-            _ => {}
+        if self.try_parser(|s| s.parse_keyword("taxa")).is_ok() {
+            return self.parse_taxa_block();
+        }
+        if self.try_parser(|s| s.parse_keyword("trees")).is_ok() {
+            return self.parse_trees_block();
         }
 
-        match self.try_and_parse_trees_block() {
-            Ok(block) => return Ok(block),
-            Err(error) if first_block_error == None => first_block_error = Some(error),
-            _ => {}
-        }
-
-        Err(first_block_error.unwrap_or(ParsingError::InvalidBlock))
+        Err(ParsingError::InvalidBlock)
     }
 
     // taxa block parsing
 
-    fn try_and_parse_taxa_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
-        self.try_and_parse_keyword("taxa")?;
+    fn parse_taxa_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
         self.parse_eos()?;
 
         self.parse_keyword("Dimensions")?;
@@ -103,8 +98,7 @@ impl<'a> Parser<'a> {
 
     // trees block parsing
 
-    fn try_and_parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
-        self.try_and_parse_keyword("trees")?;
+    fn parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
         self.parse_eos()?;
 
         let translations = self.parse_taxa_translations()?;
@@ -116,11 +110,47 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_taxa_translations(&mut self) -> Result<HashMap<&'a str, &'a str>, ParsingError> {
-        if self.try_and_parse_keyword("Translate").is_err() {
+        if self.try_parser(|s| s.parse_keyword("Translate")).is_err() {
             return Ok(HashMap::new());
         }
 
-        Err(ParsingError::InvalidBlock)
+        let mut translations = HashMap::new();
+
+        let mut translation_start = self.lexer.cursor();
+        let mut translation_end = self.lexer.cursor();
+
+        loop {
+            match self.lexer.next() {
+                Some(Token::Whitespace(_)) => {
+                    let translated_taxa_name =
+                        self.lexer.slice_from_to(translation_start, translation_end);
+
+                    // test if this is the last translated taxa
+
+                    if let Ok(actual_taxa_name) = self.try_parser(|s| {
+                        let taxa_name = s.parse_word()?;
+                        s.parse_eos()?;
+                        Ok(taxa_name)
+                    }) {
+                        translations.insert(translated_taxa_name, actual_taxa_name);
+                        return Ok(translations);
+                    }
+
+                    // test if this a translated taxa which is not the last
+
+                    if let Ok(actual_taxa_name) = self.try_parser(|s| {
+                        let taxa_name = s.parse_word()?;
+                        s.parse_punctuation(",")?;
+                        Ok(taxa_name)
+                    }) {
+                        translations.insert(translated_taxa_name, actual_taxa_name);
+                        translation_start = self.lexer.cursor();
+                    }
+                }
+                None => return Err(ParsingError::InvalidTranslation), // we reached the line end
+                _ => translation_end = self.lexer.cursor(),
+            };
+        }
     }
 
     // atomic parsers
@@ -131,6 +161,20 @@ impl<'a> Parser<'a> {
         match self.lexer.next() {
             Some(Token::EOS) => Ok(()),
             _ => Err(ParsingError::MissingEOS),
+        }
+    }
+
+    fn parse_punctuation(&mut self, expected_punctuation: &str) -> Result<&'a str, ParsingError> {
+        self.parse_and_ignore_whitespace();
+
+        match self.lexer.next() {
+            Some(Token::Punctuation(punct)) if punct == expected_punctuation => {
+                self.parse_and_ignore_whitespace();
+                Ok(punct)
+            }
+            _ => Err(ParsingError::MissingToken(String::from(
+                expected_punctuation,
+            ))),
         }
     }
 
@@ -156,19 +200,6 @@ impl<'a> Parser<'a> {
             Some(Token::Word(word)) if word.eq_ignore_ascii_case(expected_word) => {
                 self.parse_and_ignore_whitespace();
                 Ok(word)
-            }
-            _ => Err(ParsingError::MissingToken(String::from(expected_word))),
-        }
-    }
-
-    fn try_and_parse_keyword(&mut self, expected_word: &str) -> Result<(), ParsingError> {
-        self.parse_and_ignore_whitespace();
-
-        match self.lexer.peek() {
-            Some(Token::Word(word)) if word.eq_ignore_ascii_case(expected_word) => {
-                self.lexer.next();
-                self.parse_and_ignore_whitespace();
-                Ok(())
             }
             _ => Err(ParsingError::MissingToken(String::from(expected_word))),
         }
@@ -212,6 +243,21 @@ impl<'a> Parser<'a> {
     fn parse_and_ignore_whitespace(&mut self) {
         while let Some(Token::Whitespace(_)) = &self.lexer.peek() {
             self.lexer.next();
+        }
+    }
+
+    fn try_parser<T, F>(&mut self, parser: F) -> Result<T, ParsingError>
+    where
+        F: FnOnce(&mut Self) -> Result<T, ParsingError>,
+    {
+        let initial_cursor = self.lexer.cursor();
+
+        match parser(self) {
+            Ok(result) => Ok(result),
+            Err(error) => {
+                self.lexer.set_cursor(initial_cursor);
+                Err(error)
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ mod misc_parser_tests;
 mod nexus;
 mod parser;
 mod taxa_parser_tests;
+mod trees_parser_tests;
 
 pub fn parse_file(path: &str) {
     let contents = fs::read_to_string(path).expect("Should have been able to read the file");
