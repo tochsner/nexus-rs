@@ -12,7 +12,7 @@ pub enum ParsingError {
     MissingEOS,
     InvalidBlock,
     MissingToken(String),
-    UnexpectedToken,
+    UnexpectedToken(String),
     InvalidNumber,
     UnexpectedFileEnd,
     // taxa block
@@ -98,6 +98,7 @@ impl<'a> Parser<'a> {
                     return Err(ParsingError::InvalidList);
                 }
             }
+            self.parse_and_ignore_whitespace();
         }
 
         Ok(labels)
@@ -245,7 +246,7 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
-            Some(_) => Err(ParsingError::UnexpectedToken),
+            Some(token) => Err(ParsingError::UnexpectedToken(token.to_string())),
             None => Err(ParsingError::UnexpectedFileEnd),
         }
     }

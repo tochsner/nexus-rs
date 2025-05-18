@@ -27,6 +27,32 @@ mod tests {
     }
 
     #[test]
+    fn test_taxa_block_with_different_whitespace() {
+        let text = "#NEXUS
+        BEGIN taxa;
+        DIMENSIONS 5;
+        TAXLABELS
+            Apes
+            'Humans'
+            'Gor'
+            'Gor''illas'
+            'Gor''ill''as'
+        ;
+        END;";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        assert_eq!(
+            parser.parse(),
+            Ok(Nexus {
+                blocks: vec![NexusBlock::TaxaBlock(
+                    5,
+                    vec!["Apes", "Humans", "Gor", "Gor''illas", "Gor''ill''as"]
+                )]
+            })
+        );
+    }
+
+    #[test]
     fn test_taxa_block_with_missing_pieces() {
         let text = "#NEXUS
         BEGIN taxa;
