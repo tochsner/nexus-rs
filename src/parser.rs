@@ -19,7 +19,6 @@ pub enum ParsingError {
     InvalidList,
     TaxaDimensionsMismatch,
     // trees block
-    InvalidTranslation,
     DuplicateTranslations,
     TranslationForUnknownTaxa,
 }
