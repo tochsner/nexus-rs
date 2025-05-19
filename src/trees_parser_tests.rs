@@ -12,7 +12,7 @@ mod tests {
     fn test_translations_block() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS 5;
+            DIMENSIONS ntax=5;
             TAXLABELS Apes Humans 'Gorilla 1' 'Gorilla, 2;' 'Chimpanz''ee';
         END;
 
@@ -48,7 +48,7 @@ mod tests {
     fn test_translations_block_with_different_whitespace() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS 4;
+            DIMENSIONS NTAX = 4;
             TAXLABELS Apes Humans Gorilla 'Chimpanz''ee';
         END;
 
@@ -77,7 +77,7 @@ mod tests {
     fn test_partial_translations() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS 4;
+            DIMENSIONS ntax=4;
             TAXLABELS Apes Humans Gorilla 'Chimpanz''ee';
         END;
 
@@ -101,7 +101,7 @@ mod tests {
     fn test_duplicate_translations() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS 2;
+            DIMENSIONS ntax=2;
             TAXLABELS Apes Humans;
         END;
 
@@ -119,7 +119,7 @@ mod tests {
     fn test_multiple_translations_for_taxa() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS 2;
+            DIMENSIONS ntax=2;
             TAXLABELS Apes Humans;
         END;
 
@@ -138,7 +138,7 @@ mod tests {
     fn test_translations_for_unknown_taxa() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS 2;
+            DIMENSIONS ntax=2;
             TAXLABELS Apes Humans;
         END;
 
@@ -154,7 +154,7 @@ mod tests {
     fn test_empty_translations_block() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS 2;
+            DIMENSIONS ntax=2;
             TAXLABELS Apes Humans;
         END;
 

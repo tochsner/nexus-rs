@@ -74,6 +74,8 @@ impl<'a> Parser<'a> {
         self.parse_eos()?;
 
         self.parse_keyword("Dimensions")?;
+        self.parse_keyword("ntax")?;
+        self.parse_punctuation("=")?;
         let dimension = self.parse_uint()?;
         self.parse_eos()?;
 
