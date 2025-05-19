@@ -93,10 +93,7 @@ impl<'a> Parser<'a> {
         while self.lexer.peek() != Some(Token::EOS) {
             match self.parse_word() {
                 Ok(word) => labels.push(word),
-                a => {
-                    dbg!(a);
-                    return Err(ParsingError::InvalidList);
-                }
+                _ => return Err(ParsingError::InvalidList),
             }
             self.parse_and_ignore_whitespace();
         }
@@ -119,6 +116,10 @@ impl<'a> Parser<'a> {
 
     fn parse_taxa_translations(&mut self) -> Result<HashMap<&'a str, &'a str>, ParsingError> {
         if self.try_parser(|s| s.parse_keyword("Translate")).is_err() {
+            return Ok(HashMap::new());
+        }
+
+        if self.try_parser(|s| s.parse_eos()).is_ok() {
             return Ok(HashMap::new());
         }
 
