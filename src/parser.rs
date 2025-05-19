@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
+use indextree::{Arena, NodeId};
+
 use crate::{
     lexer::{Lexer, Token},
     nexus::{Nexus, NexusBlock},
+    tree::{Tree, TreeNode},
 };
 
 #[derive(PartialEq, Debug)]
@@ -108,7 +111,7 @@ impl<'a> Parser<'a> {
         self.parse_eos()?;
 
         let translations = self.parse_taxa_translations()?;
-        let trees = vec![];
+        let trees = self.parse_trees()?;
 
         self.parse_keyword("end")?;
         self.parse_eos()?;
@@ -165,6 +168,64 @@ impl<'a> Parser<'a> {
                 _ => translation_end = self.lexer.cursor(),
             };
         }
+    }
+
+    fn parse_trees(&mut self) -> Result<Vec<Tree<'a>>, ParsingError> {
+        let mut trees = vec![];
+
+        while let Ok(tree) = self.try_parser(|s| s.parse_tree()) {
+            trees.push(tree);
+        }
+
+        Ok(trees)
+    }
+
+    fn parse_tree(&mut self) -> Result<Tree<'a>, ParsingError> {
+        self.parse_keyword("TREE")?;
+        let tree_name = self.parse_word()?;
+        self.parse_punctuation("=")?;
+        let arena = self.parse_nexus()?;
+        self.parse_eos()?;
+        Ok(Tree {
+            tree: arena,
+            name: tree_name,
+            rooted: false,
+        })
+    }
+
+    fn parse_nexus(&mut self) -> Result<Arena<TreeNode<'a>>, ParsingError> {
+        self.parse_and_ignore_whitespace();
+
+        let mut arena = Arena::new();
+        self.parse_nexus_subtree(&mut arena)?;
+
+        Ok(arena)
+    }
+
+    fn parse_nexus_subtree(
+        &mut self,
+        arena: &mut Arena<TreeNode<'a>>,
+    ) -> Result<NodeId, ParsingError> {
+        if self.try_parser(|s| s.parse_punctuation("(")).is_ok() {
+            let subtree_root = match arena.is_empty() {
+                true => arena.new_node(TreeNode::new_root()),
+                false => arena.new_node(TreeNode::new_internal()),
+            };
+
+            subtree_root.append(self.parse_nexus_subtree(arena)?, arena);
+            self.parse_punctuation(",")?;
+            subtree_root.append(self.parse_nexus_subtree(arena)?, arena);
+            self.parse_punctuation(")")?;
+
+            return Ok(subtree_root);
+        }
+
+        if let Ok(taxon) = self.try_parser(|s| s.parse_word()) {
+            let leaf = arena.new_node(TreeNode::new_leaf(taxon));
+            return Ok(leaf);
+        }
+
+        Err(ParsingError::MissingEOS)
     }
 
     // atomic parsers
