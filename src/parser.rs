@@ -108,11 +108,12 @@ impl<'a> Parser<'a> {
         self.parse_eos()?;
 
         let translations = self.parse_taxa_translations()?;
+        let trees = vec![];
 
         self.parse_keyword("end")?;
         self.parse_eos()?;
 
-        Ok(Some(NexusBlock::build_trees_block(translations)?))
+        Ok(Some(NexusBlock::build_trees_block(translations, trees)?))
     }
 
     fn parse_taxa_translations(&mut self) -> Result<HashMap<&'a str, &'a str>, ParsingError> {

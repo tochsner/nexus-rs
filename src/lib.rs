@@ -8,6 +8,8 @@ mod misc_parser_tests;
 mod nexus;
 mod parser;
 mod taxa_parser_tests;
+mod translations_parser_tests;
+mod tree;
 mod trees_parser_tests;
 
 pub fn parse_file(path: &str) {

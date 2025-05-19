@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::parser::ParsingError;
+use crate::{parser::ParsingError, tree::Tree};
 
 #[derive(PartialEq, Debug)]
 pub enum NexusBlock<'a> {
     TaxaBlock(usize, Vec<&'a str>),
-    TreesBlock(HashMap<&'a str, &'a str>),
+    TreesBlock(HashMap<&'a str, &'a str>, Vec<Tree<'a>>),
 }
 
 impl<'a> NexusBlock<'a> {
@@ -21,6 +21,7 @@ impl<'a> NexusBlock<'a> {
     }
     pub fn build_trees_block(
         translations: HashMap<&'a str, &'a str>,
+        trees: Vec<Tree<'a>>,
     ) -> Result<NexusBlock<'a>, ParsingError> {
         // verify that we have at most one translation per taxa
         let mut unique_taxa_with_translation = translations.values().collect::<Vec<&&str>>();
@@ -30,7 +31,7 @@ impl<'a> NexusBlock<'a> {
             return Err(ParsingError::DuplicateTranslations);
         }
 
-        Ok(NexusBlock::TreesBlock(translations))
+        Ok(NexusBlock::TreesBlock(translations, trees))
     }
 }
 
@@ -51,7 +52,7 @@ impl<'a> Nexus<'a> {
                 all_taxa.extend(taxa);
             }
 
-            if let NexusBlock::TreesBlock(translations) = block {
+            if let NexusBlock::TreesBlock(translations, _) = block {
                 all_translated_taxa.extend(translations.values());
             }
         }

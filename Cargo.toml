@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+indextree = "4.7.4"
 logos = "0.15.0"
 regex = "1.11.1"

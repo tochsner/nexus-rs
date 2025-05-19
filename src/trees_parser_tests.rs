@@ -1,172 +1,47 @@
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, process::exit};
 
     use crate::{
         lexer::Lexer,
         nexus::NexusBlock,
-        parser::{Parser, ParsingError},
+        parser::Parser,
+        tree::{Tree, TreeNode},
     };
 
     #[test]
-    fn test_translations_block() {
+    fn test_simplest_trees_block() {
         let text = "#NEXUS
         BEGIN taxa;
-            DIMENSIONS ntax=5;
-            TAXLABELS Apes Humans 'Gorilla 1' 'Gorilla, 2;' 'Chimpanz''ee';
+            DIMENSIONS ntax=3;
+            TAXLABELS Apes Humans Gorillas;
         END;
 
         BEGIN trees;
-            Translate
-                some very arbitrary text & some weird symbols cool: Apes,
-                some other arbitrary text + some other symbols- Humans,
-                Gorilla         'Gorilla 1',
-                Gorilla2         'Gorilla, 2;',
-                Schimpansen 'Chimpanz''ee'
-                ;
+            TREE t1 = ((Apes, Humans), Gorillas);
         END;
         ";
         let lexer = Lexer::new(text);
         let mut parser = Parser::new(lexer);
         let result = parser.parse().unwrap();
+
+        let mut expected_tree = Tree::new("t1", false);
+
+        let apes_humans_gorillas = expected_tree.tree.new_node(TreeNode::new_root());
+        let apes_humans = expected_tree.tree.new_node(TreeNode::new_internal());
+        let apes = expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
+        let humans = expected_tree.tree.new_node(TreeNode::new_leaf("Humans"));
+        let gorillas = expected_tree.tree.new_node(TreeNode::new_leaf("Gorillas"));
+
+        apes_humans_gorillas.append(apes_humans, &mut expected_tree.tree);
+        apes_humans_gorillas.append(gorillas, &mut expected_tree.tree);
+
+        apes_humans.append(apes, &mut expected_tree.tree);
+        apes_humans.append(humans, &mut expected_tree.tree);
+
         assert_eq!(
             result.blocks.get(1),
-            Some(&NexusBlock::TreesBlock(HashMap::from([
-                (
-                    "some very arbitrary text & some weird symbols cool:",
-                    "Apes"
-                ),
-                ("some other arbitrary text + some other symbols-", "Humans"),
-                ("Gorilla", "Gorilla 1"),
-                ("Gorilla2", "Gorilla, 2;"),
-                ("Schimpansen", "Chimpanz''ee"),
-            ])))
-        );
-    }
-
-    #[test]
-    fn test_translations_block_with_different_whitespace() {
-        let text = "#NEXUS
-        BEGIN taxa;
-            DIMENSIONS NTAX = 4;
-            TAXLABELS Apes Humans Gorilla 'Chimpanz''ee';
-        END;
-
-        BEGIN trees;
-            Translate some very arbitrary text & some weird symbols cool: Apes, some other arbitrary text + some other symbols- Humans, Gorilla         Gorilla, Schimpansen 'Chimpanz''ee';
-        END;
-        ";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        let result = parser.parse().unwrap();
-        assert_eq!(
-            result.blocks.get(1),
-            Some(&NexusBlock::TreesBlock(HashMap::from([
-                (
-                    "some very arbitrary text & some weird symbols cool:",
-                    "Apes"
-                ),
-                ("some other arbitrary text + some other symbols-", "Humans"),
-                ("Gorilla", "Gorilla"),
-                ("Schimpansen", "Chimpanz''ee"),
-            ])))
-        );
-    }
-
-    #[test]
-    fn test_partial_translations() {
-        let text = "#NEXUS
-        BEGIN taxa;
-            DIMENSIONS ntax=4;
-            TAXLABELS Apes Humans Gorilla 'Chimpanz''ee';
-        END;
-
-        BEGIN trees;
-            Translate some very arbitrary text & some weird symbols cool: Apes;
-        END;
-        ";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        let result = parser.parse().unwrap();
-        assert_eq!(
-            result.blocks.get(1),
-            Some(&NexusBlock::TreesBlock(HashMap::from([(
-                "some very arbitrary text & some weird symbols cool:",
-                "Apes"
-            ),])))
-        );
-    }
-
-    #[test]
-    fn test_duplicate_translations() {
-        let text = "#NEXUS
-        BEGIN taxa;
-            DIMENSIONS ntax=2;
-            TAXLABELS Apes Humans;
-        END;
-
-        BEGIN trees;
-            Translate
-                Affen Apes,
-                Affen Humans;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Err(ParsingError::DuplicateTranslations));
-    }
-
-    #[test]
-    fn test_multiple_translations_for_taxa() {
-        let text = "#NEXUS
-        BEGIN taxa;
-            DIMENSIONS ntax=2;
-            TAXLABELS Apes Humans;
-        END;
-
-        BEGIN trees;
-            Translate
-                Affen Apes,
-                Affen2 Apes,
-                Menschen Humans;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Err(ParsingError::DuplicateTranslations));
-    }
-
-    #[test]
-    fn test_translations_for_unknown_taxa() {
-        let text = "#NEXUS
-        BEGIN taxa;
-            DIMENSIONS ntax=2;
-            TAXLABELS Apes Humans;
-        END;
-
-        BEGIN trees;
-            Translate Gorillas Gorillas;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        assert_eq!(parser.parse(), Err(ParsingError::TranslationForUnknownTaxa));
-    }
-
-    #[test]
-    fn test_empty_translations_block() {
-        let text = "#NEXUS
-        BEGIN taxa;
-            DIMENSIONS ntax=2;
-            TAXLABELS Apes Humans;
-        END;
-
-        BEGIN trees;
-            Translate;
-        END;";
-        let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
-        let result = parser.parse().unwrap();
-        assert_eq!(
-            result.blocks.get(1),
-            Some(&NexusBlock::TreesBlock(HashMap::from([])))
+            Some(&NexusBlock::TreesBlock(HashMap::new(), vec![expected_tree]))
         );
     }
 }
