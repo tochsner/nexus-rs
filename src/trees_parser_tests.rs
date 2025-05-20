@@ -52,11 +52,11 @@ mod tests {
 
         let mut expected_tree = Tree::new("t1", false);
 
-        let apes_humans_gorillas = expected_tree.tree.new_node(TreeNode::new_root());
-        let apes_humans = expected_tree.tree.new_node(TreeNode::new_internal());
         let apes = expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
         let humans = expected_tree.tree.new_node(TreeNode::new_leaf("Humans"));
+        let apes_humans = expected_tree.tree.new_node(TreeNode::new_internal());
         let gorillas = expected_tree.tree.new_node(TreeNode::new_leaf("Gorillas"));
+        let apes_humans_gorillas = expected_tree.tree.new_node(TreeNode::new_root());
 
         apes_humans_gorillas.append(apes_humans, &mut expected_tree.tree);
         apes_humans_gorillas.append(gorillas, &mut expected_tree.tree);
@@ -89,13 +89,13 @@ mod tests {
 
         let mut t1_expected_tree = Tree::new("t1", false);
 
-        let t1_apes_humans_gorillas = t1_expected_tree.tree.new_node(TreeNode::new_root());
-        let t1_apes_humans = t1_expected_tree.tree.new_node(TreeNode::new_internal());
         let t1_apes = t1_expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
         let t1_humans = t1_expected_tree.tree.new_node(TreeNode::new_leaf("Humans"));
+        let t1_apes_humans = t1_expected_tree.tree.new_node(TreeNode::new_internal());
         let t1_gorillas = t1_expected_tree
             .tree
             .new_node(TreeNode::new_leaf("Gorillas"));
+        let t1_apes_humans_gorillas = t1_expected_tree.tree.new_node(TreeNode::new_root());
 
         t1_apes_humans_gorillas.append(t1_apes_humans, &mut t1_expected_tree.tree);
         t1_apes_humans_gorillas.append(t1_gorillas, &mut t1_expected_tree.tree);
@@ -105,13 +105,13 @@ mod tests {
 
         let mut t2_expected_tree = Tree::new("t2", false);
 
-        let t2_apes_humans_gorillas = t2_expected_tree.tree.new_node(TreeNode::new_root());
         let t2_apes = t2_expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
-        let t2_humans_gorillas = t2_expected_tree.tree.new_node(TreeNode::new_internal());
         let t2_humans = t2_expected_tree.tree.new_node(TreeNode::new_leaf("Humans"));
         let t2_gorillas = t2_expected_tree
             .tree
             .new_node(TreeNode::new_leaf("Gorillas"));
+        let t2_humans_gorillas = t2_expected_tree.tree.new_node(TreeNode::new_internal());
+        let t2_apes_humans_gorillas = t2_expected_tree.tree.new_node(TreeNode::new_root());
 
         t2_apes_humans_gorillas.append(t2_apes, &mut t2_expected_tree.tree);
         t2_apes_humans_gorillas.append(t2_humans_gorillas, &mut t2_expected_tree.tree);
@@ -125,6 +125,50 @@ mod tests {
                 HashMap::new(),
                 vec![t1_expected_tree, t2_expected_tree]
             ))
+        );
+    }
+
+    #[test]
+    fn test_trees_block_with_lengths() {
+        let text = "#NEXUS
+        BEGIN taxa;
+            DIMENSIONS ntax=3;
+            TAXLABELS Apes Humans Gorillas;
+        END;
+
+        BEGIN trees;
+            TREE t1 = ((Apes: 1.0, Humans:2):1, Gorillas: 2.5);
+        END;
+        ";
+        let lexer = Lexer::new(text);
+        let mut parser = Parser::new(lexer);
+        let result = parser.parse().unwrap();
+
+        let mut expected_tree = Tree::new("t1", false);
+
+        let apes = expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Apes").with_length(1.0));
+        let humans = expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Humans").with_length(2.0));
+        let apes_humans = expected_tree
+            .tree
+            .new_node(TreeNode::new_internal().with_length(1.0));
+        let gorillas = expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Gorillas").with_length(2.5));
+        let apes_humans_gorillas = expected_tree.tree.new_node(TreeNode::new_root());
+
+        apes_humans_gorillas.append(apes_humans, &mut expected_tree.tree);
+        apes_humans_gorillas.append(gorillas, &mut expected_tree.tree);
+
+        apes_humans.append(apes, &mut expected_tree.tree);
+        apes_humans.append(humans, &mut expected_tree.tree);
+
+        assert_eq!(
+            result.blocks.get(1),
+            Some(&NexusBlock::TreesBlock(HashMap::new(), vec![expected_tree]))
         );
     }
 }

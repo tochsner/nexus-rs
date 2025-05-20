@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use indextree::{Arena, NodeId};
 
@@ -197,7 +197,7 @@ impl<'a> Parser<'a> {
         self.parse_and_ignore_whitespace();
 
         let mut arena = Arena::new();
-        self.parse_nexus_subtree(&mut arena)?;
+        self.parse_nexus_subtree(&mut arena, true)?;
 
         Ok(arena)
     }
@@ -205,24 +205,49 @@ impl<'a> Parser<'a> {
     fn parse_nexus_subtree(
         &mut self,
         arena: &mut Arena<TreeNode<'a>>,
+        is_root: bool,
     ) -> Result<NodeId, ParsingError> {
         if self.try_parser(|s| s.parse_punctuation("(")).is_ok() {
-            let subtree_root = match arena.is_empty() {
-                true => arena.new_node(TreeNode::new_root()),
-                false => arena.new_node(TreeNode::new_internal()),
-            };
-
-            subtree_root.append(self.parse_nexus_subtree(arena)?, arena);
+            let child_id_1 = self.parse_nexus_subtree(arena, false)?;
             self.parse_punctuation(",")?;
-            subtree_root.append(self.parse_nexus_subtree(arena)?, arena);
+
+            let child_id_2 = self.parse_nexus_subtree(arena, false)?;
             self.parse_punctuation(")")?;
 
-            return Ok(subtree_root);
+            let subtree_root_node = match is_root {
+                true => TreeNode::new_root(),
+                false => TreeNode::new_internal(),
+            };
+
+            let subtree_root_node = match self.try_parser(|s| {
+                s.parse_punctuation(":")?;
+                s.parse_f64()
+            }) {
+                Ok(length) => subtree_root_node.with_length(length),
+                _ => subtree_root_node,
+            };
+
+            let subtree_root_node_id = arena.new_node(subtree_root_node);
+            subtree_root_node_id.append(child_id_1, arena);
+            subtree_root_node_id.append(child_id_2, arena);
+
+            return Ok(subtree_root_node_id);
         }
 
         if let Ok(taxon) = self.try_parser(|s| s.parse_word()) {
-            let leaf = arena.new_node(TreeNode::new_leaf(taxon));
-            return Ok(leaf);
+            let leaf = TreeNode::new_leaf(taxon);
+
+            let leaf = match self.try_parser(|s| {
+                s.parse_punctuation(":")?;
+                s.parse_f64()
+            }) {
+                Ok(length) => leaf.with_length(length),
+                _ => leaf,
+            };
+
+            let leaf_node_id = arena.new_node(leaf);
+
+            return Ok(leaf_node_id);
         }
 
         Err(ParsingError::MissingEOS)
@@ -268,6 +293,27 @@ impl<'a> Parser<'a> {
         return Ok(num);
     }
 
+    fn parse_f64(&mut self) -> Result<f64, ParsingError> {
+        self.parse_and_ignore_whitespace();
+
+        let number_start = self.lexer.cursor();
+
+        self.lexer.next(); // the part before the decimal point
+
+        if Some(Token::Punctuation(".")) == self.lexer.peek() {
+            self.lexer.next(); // the decimal point
+            self.lexer.next(); // the decimal part
+        }
+
+        let number_string = self.lexer.slice_from(number_start);
+
+        let Ok(num) = number_string.parse() else {
+            return Err(ParsingError::InvalidNumber);
+        };
+
+        return Ok(num);
+    }
+
     fn parse_keyword(&mut self, expected_word: &str) -> Result<&'a str, ParsingError> {
         self.parse_and_ignore_whitespace();
 
@@ -301,8 +347,9 @@ impl<'a> Parser<'a> {
                             }
 
                             // the word is finished, we return the word without the last quotation mark
-                            let concatenated_word =
-                                self.lexer.slice(start_cursor, self.lexer.cursor() - 1);
+                            let concatenated_word = self
+                                .lexer
+                                .slice_from_to(start_cursor, self.lexer.cursor() - 1);
                             return Ok(concatenated_word);
                         }
                         None => return Err(ParsingError::UnexpectedFileEnd),
