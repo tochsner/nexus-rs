@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use indextree::{Arena, NodeId};
 
@@ -307,13 +307,13 @@ impl<'a> Parser<'a> {
             self.lexer.next(); // the decimal part
         }
 
-        let number_string = self.lexer.slice_from(number_start);
+        let number = self.lexer.slice_from(number_start);
 
-        let Ok(num) = number_string.parse() else {
+        let Ok(number) = number.parse() else {
             return Err(ParsingError::InvalidNumber);
         };
 
-        return Ok(num);
+        return Ok(number);
     }
 
     fn parse_keyword(&mut self, expected_word: &str) -> Result<&'a str, ParsingError> {

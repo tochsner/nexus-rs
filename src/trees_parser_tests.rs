@@ -137,7 +137,7 @@ mod tests {
         END;
 
         BEGIN trees;
-            TREE t1 = ((Apes: 1.0123, Humans:2):.10, Gorillas: 2.5);
+            TREE t1 = ((Apes: 1.0123, Humans:2):.10, Gorillas: 2.5e-3);
         END;
         ";
         let lexer = Lexer::new(text);
@@ -157,7 +157,7 @@ mod tests {
             .new_node(TreeNode::new_internal().with_length(0.10));
         let gorillas = expected_tree
             .tree
-            .new_node(TreeNode::new_leaf("Gorillas").with_length(2.5));
+            .new_node(TreeNode::new_leaf("Gorillas").with_length(0.0025));
         let apes_humans_gorillas = expected_tree.tree.new_node(TreeNode::new_root());
 
         apes_humans_gorillas.append(apes_humans, &mut expected_tree.tree);
