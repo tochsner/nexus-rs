@@ -298,7 +298,9 @@ impl<'a> Parser<'a> {
 
         let number_start = self.lexer.cursor();
 
-        self.lexer.next(); // the part before the decimal point
+        if Some(Token::Punctuation(".")) != self.lexer.peek() {
+            self.lexer.next(); // the part before the decimal point
+        }
 
         if Some(Token::Punctuation(".")) == self.lexer.peek() {
             self.lexer.next(); // the decimal point
