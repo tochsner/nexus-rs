@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
     fn parse_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        if self.lexer.peek() == None {
+        if self.lexer.peek().is_none() {
             return Ok(None);
         }
 
@@ -146,7 +146,7 @@ impl<'a> Parser<'a> {
                         s.parse_eos()?;
                         Ok(taxa_name)
                     }) {
-                        if translations.insert(translated_taxa_name, actual_taxa_name) != None {
+                        if translations.insert(translated_taxa_name, actual_taxa_name).is_some() {
                             // there is already a translation with this key
                             return Err(ParsingError::DuplicateTranslations);
                         }
@@ -290,7 +290,7 @@ impl<'a> Parser<'a> {
         };
 
         self.parse_and_ignore_whitespace();
-        return Ok(num);
+        Ok(num)
     }
 
     fn parse_f64(&mut self) -> Result<f64, ParsingError> {
@@ -313,7 +313,7 @@ impl<'a> Parser<'a> {
             return Err(ParsingError::InvalidNumber);
         };
 
-        return Ok(number);
+        Ok(number)
     }
 
     fn parse_keyword(&mut self, expected_word: &str) -> Result<&'a str, ParsingError> {

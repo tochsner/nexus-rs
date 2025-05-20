@@ -11,7 +11,7 @@ pub enum Token<'a> {
     Word(&'a str),
 }
 
-impl<'a> Display for Token<'a> {
+impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::EOS => write!(f, "EOS"),
@@ -54,32 +54,32 @@ impl<'a> Lexer<'a> {
 
         let context = &self.content[self.cursor..];
 
-        if let Some(res) = self.eos_regex.find(&context) {
+        if let Some(res) = self.eos_regex.find(context) {
             return (Some(Token::EOS), self.cursor + res.len());
         };
 
-        if let Some(res) = self.comment_regex.captures(&context) {
+        if let Some(res) = self.comment_regex.captures(context) {
             return (
                 Some(Token::Comment(res.name("comment").unwrap().as_str())),
                 self.cursor + res.get(0).unwrap().len(),
             );
         };
 
-        if let Some(res) = self.whitespace_regex.find(&context) {
+        if let Some(res) = self.whitespace_regex.find(context) {
             return (
                 Some(Token::Whitespace(res.as_str())),
                 self.cursor + res.len(),
             );
         };
 
-        if let Some(res) = self.punctuation_regex.find(&context) {
+        if let Some(res) = self.punctuation_regex.find(context) {
             return (
                 Some(Token::Punctuation(res.as_str())),
                 self.cursor + res.len(),
             );
         };
 
-        if let Some(res) = self.word_regex.find(&context) {
+        if let Some(res) = self.word_regex.find(context) {
             return (Some(Token::Word(res.as_str())), self.cursor + res.len());
         };
 

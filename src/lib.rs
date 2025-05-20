@@ -26,9 +26,6 @@ pub fn parse_file(path: &str) {
     println!("OK: {}", result.blocks.len());
 
     for block in result.blocks {
-        match block {
-            nexus::NexusBlock::TreesBlock(_, trees) => println!("{}", trees.len()),
-            _ => {}
-        }
+        if let nexus::NexusBlock::TreesBlock(_, trees) = block { println!("{}", trees.len()) }
     }
 }
