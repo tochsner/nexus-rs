@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::{
-        lexer::Lexer,
+        lexer::{Lexer, Tokens},
         nexus::Nexus,
         parser::{Parser, ParsingError},
     };
@@ -10,17 +10,20 @@ mod tests {
     fn test_empty_nexus() {
         let text = "#NEXUS";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Ok(Nexus::new()));
 
         let text = "#nexus";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Ok(Nexus::new()));
 
         let text = "#notnexus";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Err(ParsingError::MissingNexusTag));
     }
 
@@ -30,7 +33,8 @@ mod tests {
         BEG;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Err(ParsingError::MissingToken(String::from("begin")))

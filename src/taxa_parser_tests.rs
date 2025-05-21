@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::{
-        lexer::Lexer,
+        lexer::{Lexer, Tokens},
         nexus::{Nexus, NexusBlock},
         parser::{Parser, ParsingError},
     };
@@ -14,7 +14,8 @@ mod tests {
         TAXLABELS Apes 'Humans' 'Gor' 'Gor''illas' 'Gor''ill''as';
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
@@ -40,7 +41,8 @@ mod tests {
         ;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
@@ -59,7 +61,8 @@ mod tests {
         DIMENSIONS ntax=10;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Err(ParsingError::MissingToken(String::from("TaxLabels")))
@@ -70,7 +73,8 @@ mod tests {
         DIMENSIONS 0;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Err(ParsingError::MissingToken(String::from("ntax")))
@@ -81,7 +85,8 @@ mod tests {
         DIMENSIONS ntax=;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Err(ParsingError::InvalidNumber));
 
         let text = "#NEXUS
@@ -89,7 +94,8 @@ mod tests {
         TAXLABELS Apes Humans;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Err(ParsingError::MissingToken(String::from("Dimensions")))
@@ -101,7 +107,8 @@ mod tests {
         TAXLABELS;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Err(ParsingError::MissingEOS));
     }
 
@@ -113,7 +120,8 @@ mod tests {
         TAXLABELS human ape gorilla;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Err(ParsingError::TaxaDimensionsMismatch));
     }
 
@@ -125,7 +133,8 @@ mod tests {
         TAXLABELS;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
@@ -142,7 +151,8 @@ mod tests {
         TAXLABELS 'Species@1' 'Species#2' 'Species$3';
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
@@ -162,7 +172,8 @@ mod tests {
         TAXLABELS 'Species 1' 'Species 2';
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.parse(),
             Ok(Nexus {

@@ -3,7 +3,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        lexer::Lexer,
+        lexer::{Lexer, Tokens},
         nexus::NexusBlock,
         parser::{Parser, ParsingError},
     };
@@ -27,7 +27,8 @@ mod tests {
         END;
         ";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
         assert_eq!(
             result.blocks.get(1),
@@ -60,7 +61,8 @@ mod tests {
         END;
         ";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
         assert_eq!(
             result.blocks.get(1),
@@ -92,7 +94,8 @@ mod tests {
         END;
         ";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
         assert_eq!(
             result.blocks.get(1),
@@ -120,7 +123,8 @@ mod tests {
                 Affen Humans;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Err(ParsingError::DuplicateTranslations));
     }
 
@@ -139,7 +143,8 @@ mod tests {
                 Menschen Humans;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Err(ParsingError::DuplicateTranslations));
     }
 
@@ -155,7 +160,8 @@ mod tests {
             Translate Gorillas Gorillas;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         assert_eq!(parser.parse(), Err(ParsingError::TranslationForUnknownTaxa));
     }
 
@@ -171,7 +177,8 @@ mod tests {
             Translate;
         END;";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
         assert_eq!(
             result.blocks.get(1),

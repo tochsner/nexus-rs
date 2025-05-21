@@ -1,6 +1,6 @@
 use std::fs;
 
-use lexer::Lexer;
+use lexer::{Lexer, Tokens};
 use parser::Parser;
 
 mod lexer;
@@ -17,15 +17,18 @@ pub fn parse_file(path: &str) {
 
     println!("Lexing...");
     let lexer = Lexer::new(&contents);
+    let tokens = Tokens::new(&lexer);
 
     println!("Parsing...");
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(tokens);
     let result = parser.parse().unwrap();
 
     println!("Parsing done.");
     println!("OK: {}", result.blocks.len());
 
     for block in result.blocks {
-        if let nexus::NexusBlock::TreesBlock(_, trees) = block { println!("{}", trees.len()) }
+        if let nexus::NexusBlock::TreesBlock(_, trees) = block {
+            println!("{}", trees.len())
+        }
     }
 }

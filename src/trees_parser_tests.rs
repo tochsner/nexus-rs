@@ -3,7 +3,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        lexer::Lexer,
+        lexer::{Lexer, Tokens},
         nexus::NexusBlock,
         parser::Parser,
         tree::{Tree, TreeNode},
@@ -22,7 +22,8 @@ mod tests {
         END;
         ";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
 
         let mut expected_tree = Tree::new("t1", false);
@@ -47,7 +48,8 @@ mod tests {
         END;
         ";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
 
         let mut expected_tree = Tree::new("t1", false);
@@ -84,7 +86,8 @@ mod tests {
         END;
         ";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
 
         let mut t1_expected_tree = Tree::new("t1", false);
@@ -141,7 +144,8 @@ mod tests {
         END;
         ";
         let lexer = Lexer::new(text);
-        let mut parser = Parser::new(lexer);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
 
         let mut expected_tree = Tree::new("t1", false);

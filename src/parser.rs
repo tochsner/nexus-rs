@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use indextree::{Arena, NodeId};
 
 use crate::{
-    lexer::{Lexer, Token},
+    lexer::{Token, Tokens},
     nexus::{Nexus, NexusBlock},
     tree::{Tree, TreeNode},
 };
@@ -27,12 +27,12 @@ pub enum ParsingError {
 }
 
 pub struct Parser<'a> {
-    lexer: Lexer<'a>,
+    tokens: Tokens<'a>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(lexer: Lexer<'a>) -> Self {
-        Self { lexer }
+    pub fn new(tokens: Tokens<'a>) -> Self {
+        Self { tokens }
     }
 
     pub fn parse(&mut self) -> Result<Nexus, ParsingError> {
@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
     fn parse_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        if self.lexer.peek().is_none() {
+        if self.tokens.peek().is_none() {
             return Ok(None);
         }
 
@@ -94,7 +94,7 @@ impl<'a> Parser<'a> {
     fn parse_words(&mut self) -> Result<Vec<&'a str>, ParsingError> {
         let mut labels = vec![];
 
-        while self.lexer.peek() != Some(Token::EOS) {
+        while self.tokens.peek() != Some(&Token::EOS) {
             match self.parse_word() {
                 Ok(word) => labels.push(word),
                 _ => return Err(ParsingError::InvalidList),
@@ -130,14 +130,15 @@ impl<'a> Parser<'a> {
 
         let mut translations = HashMap::new();
 
-        let mut translation_start = self.lexer.cursor();
-        let mut translation_end = self.lexer.cursor();
+        let mut translation_start = self.tokens.cursor();
+        let mut translation_end = self.tokens.cursor();
 
         loop {
-            match self.lexer.next() {
+            match self.tokens.next() {
                 Some(Token::Whitespace(_)) => {
-                    let translated_taxa_name =
-                        self.lexer.slice_from_to(translation_start, translation_end);
+                    let translated_taxa_name = self
+                        .tokens
+                        .slice_from_to(translation_start, translation_end);
 
                     // test if this is the last translated taxa
 
@@ -146,7 +147,10 @@ impl<'a> Parser<'a> {
                         s.parse_eos()?;
                         Ok(taxa_name)
                     }) {
-                        if translations.insert(translated_taxa_name, actual_taxa_name).is_some() {
+                        if translations
+                            .insert(translated_taxa_name, actual_taxa_name)
+                            .is_some()
+                        {
                             // there is already a translation with this key
                             return Err(ParsingError::DuplicateTranslations);
                         }
@@ -161,11 +165,11 @@ impl<'a> Parser<'a> {
                         Ok(taxa_name)
                     }) {
                         translations.insert(translated_taxa_name, actual_taxa_name);
-                        translation_start = self.lexer.cursor();
+                        translation_start = self.tokens.cursor();
                     }
                 }
                 None => return Err(ParsingError::UnexpectedFileEnd),
-                _ => translation_end = self.lexer.cursor(),
+                _ => translation_end = self.tokens.cursor(),
             };
         }
     }
@@ -258,7 +262,7 @@ impl<'a> Parser<'a> {
     fn parse_eos(&mut self) -> Result<(), ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        match self.lexer.next() {
+        match self.tokens.next() {
             Some(Token::EOS) => Ok(()),
             _ => Err(ParsingError::MissingEOS),
         }
@@ -267,8 +271,8 @@ impl<'a> Parser<'a> {
     fn parse_punctuation(&mut self, expected_punctuation: &str) -> Result<&'a str, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        match self.lexer.next() {
-            Some(Token::Punctuation(punct)) if punct == expected_punctuation => {
+        match self.tokens.next() {
+            Some(Token::Punctuation(punct)) if punct == &expected_punctuation => {
                 self.parse_and_ignore_whitespace();
                 Ok(punct)
             }
@@ -281,33 +285,29 @@ impl<'a> Parser<'a> {
     fn parse_uint(&mut self) -> Result<usize, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        let Some(Token::Word(word)) = self.lexer.next() else {
-            return Err(ParsingError::InvalidNumber);
-        };
-
-        let Ok(num) = word.parse() else {
+        let Some(Token::Integer(number)) = self.tokens.next() else {
             return Err(ParsingError::InvalidNumber);
         };
 
         self.parse_and_ignore_whitespace();
-        Ok(num)
+        Ok(*number as usize)
     }
 
     fn parse_f64(&mut self) -> Result<f64, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        let number_start = self.lexer.cursor();
+        let number_start = self.tokens.cursor();
 
-        if Some(Token::Punctuation(".")) != self.lexer.peek() {
-            self.lexer.next(); // the part before the decimal point
+        if Some(&Token::Punctuation(".")) != self.tokens.peek() {
+            self.tokens.next(); // the part before the decimal point
         }
 
-        if Some(Token::Punctuation(".")) == self.lexer.peek() {
-            self.lexer.next(); // the decimal point
-            self.lexer.next(); // the decimal part
+        if Some(&Token::Punctuation(".")) == self.tokens.peek() {
+            self.tokens.next(); // the decimal point
+            self.tokens.next(); // the decimal part
         }
 
-        let number = self.lexer.slice_from(number_start);
+        let number = self.tokens.slice_from(number_start);
 
         let Ok(number) = number.parse() else {
             return Err(ParsingError::InvalidNumber);
@@ -319,7 +319,7 @@ impl<'a> Parser<'a> {
     fn parse_keyword(&mut self, expected_word: &str) -> Result<&'a str, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        match self.lexer.next() {
+        match self.tokens.next() {
             Some(Token::Word(word)) if word.eq_ignore_ascii_case(expected_word) => {
                 self.parse_and_ignore_whitespace();
                 Ok(word)
@@ -331,27 +331,27 @@ impl<'a> Parser<'a> {
     fn parse_word(&mut self) -> Result<&'a str, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        match self.lexer.next() {
+        match self.tokens.next() {
             Some(Token::Word(word)) => Ok(word),
             // the next token is a quotation mark, we have a quoted word
             Some(Token::Punctuation("'")) => {
-                let start_cursor = self.lexer.cursor();
+                let start_cursor = self.tokens.cursor();
 
                 loop {
-                    match self.lexer.next() {
+                    match self.tokens.next() {
                         Some(Token::Punctuation("'")) => {
                             // we have two cases:
                             //      either, this is the final quotation mark,
                             //      or, there is a pair of quotation marks
-                            if self.lexer.peek() == Some(Token::Punctuation("'")) {
-                                self.lexer.next();
+                            if self.tokens.peek() == Some(&Token::Punctuation("'")) {
+                                self.tokens.next();
                                 continue;
                             }
 
                             // the word is finished, we return the word without the last quotation mark
                             let concatenated_word = self
-                                .lexer
-                                .slice_from_to(start_cursor, self.lexer.cursor() - 1);
+                                .tokens
+                                .slice_from_to(start_cursor, self.tokens.cursor() - 1);
                             return Ok(concatenated_word);
                         }
                         None => return Err(ParsingError::UnexpectedFileEnd),
@@ -365,8 +365,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_and_ignore_whitespace(&mut self) {
-        while let Some(Token::Whitespace(_)) = &self.lexer.peek() {
-            self.lexer.next();
+        while let Some(Token::Whitespace(_)) = &self.tokens.peek() {
+            self.tokens.next();
         }
     }
 
@@ -374,12 +374,12 @@ impl<'a> Parser<'a> {
     where
         F: FnOnce(&mut Self) -> Result<T, ParsingError>,
     {
-        let initial_cursor = self.lexer.cursor();
+        let initial_cursor = self.tokens.cursor();
 
         match parser(self) {
             Ok(result) => Ok(result),
             Err(error) => {
-                self.lexer.set_cursor(initial_cursor);
+                self.tokens.set_cursor(initial_cursor);
                 Err(error)
             }
         }
