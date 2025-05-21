@@ -97,7 +97,10 @@ impl<'a> Parser<'a> {
         while self.tokens.peek() != Some(&Token::EOS) {
             match self.parse_word() {
                 Ok(word) => labels.push(word),
-                _ => return Err(ParsingError::InvalidList),
+                a => {
+                    dbg!(a);
+                    return Err(ParsingError::InvalidList);
+                }
             }
             self.parse_and_ignore_whitespace();
         }
@@ -320,6 +323,7 @@ impl<'a> Parser<'a> {
         match self.tokens.next() {
             Some(Token::Word(word)) => Ok(word),
             Some(Token::QuotedWord(word)) => Ok(word),
+            Some(Token::Float(_)) | Some(Token::Integer(_)) => Ok(self.tokens.last_slice()),
             Some(token) => Err(ParsingError::UnexpectedToken(token.to_string())),
             None => Err(ParsingError::UnexpectedFileEnd),
         }

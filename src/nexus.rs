@@ -63,6 +63,7 @@ impl<'a> Nexus<'a> {
             .filter(|t| !all_taxa.contains(t))
             .collect::<Vec<_>>();
         if !unknown_translated_taxa.is_empty() {
+            dbg!(all_translated_taxa.clone());
             return Err(ParsingError::TranslationForUnknownTaxa);
         }
 

@@ -64,6 +64,11 @@ impl<'a> Lexer<'a> {
         let end = self.ranges.get(to_token - 1).unwrap().end;
         &self.content[start..end]
     }
+    pub fn slice(&self, token: usize) -> &'a str {
+        let start = self.ranges.get(token).unwrap().start;
+        let end = self.ranges.get(token).unwrap().end;
+        &self.content[start..end]
+    }
 }
 
 impl<'a> Lexer<'a> {
@@ -133,13 +138,12 @@ impl<'a> Tokens<'a> {
         self.cursor = new_cursor;
     }
 
-    pub fn slice_from(&self, from: usize) -> &'a str {
-        todo!("Needs fixing");
-        // &self.content[from..self.cursor()]
-    }
-
     pub fn slice_from_to(&self, from: usize, to: usize) -> &'a str {
         self.lexer.slice_from_to(from, to)
+    }
+
+    pub fn last_slice(&self) -> &'a str {
+        self.lexer.slice(self.cursor - 1)
     }
 }
 

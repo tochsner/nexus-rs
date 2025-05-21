@@ -82,6 +82,36 @@ mod tests {
     }
 
     #[test]
+    fn test_numerical_translations() {
+        let text = "#NEXUS
+        BEGIN taxa;
+            DIMENSIONS NTAX = 4;
+            TAXLABELS 1 2 3 4;
+        END;
+
+        BEGIN trees;
+            Translate
+                0 1,
+                1 2,
+                2 3,
+                3 4
+            ;
+        END;
+        ";
+        let lexer = Lexer::new(text);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
+        let result = parser.parse().unwrap();
+        assert_eq!(
+            result.blocks.get(1),
+            Some(&NexusBlock::TreesBlock(
+                HashMap::from([("0", "1"), ("1", "2"), ("2", "3"), ("3", "4"),]),
+                vec![]
+            ))
+        );
+    }
+
+    #[test]
     fn test_partial_translations() {
         let text = "#NEXUS
         BEGIN taxa;
