@@ -1,13 +1,15 @@
 use std::fs;
 
-use lexer::{Lexer, Tokens};
+use lexer::Lexer;
 use parser::Parser;
+use tokens::Tokens;
 
 mod lexer;
 mod misc_parser_tests;
 mod nexus;
 mod parser;
 mod taxa_parser_tests;
+mod tokens;
 mod translations_parser_tests;
 mod tree;
 mod trees_parser_tests;

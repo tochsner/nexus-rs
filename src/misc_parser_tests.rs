@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod tests {
+    use crate::tokens::Tokens;
     use crate::{
-        lexer::{Lexer, Tokens},
+        lexer::Lexer,
         nexus::Nexus,
         parser::{Parser, ParsingError},
     };

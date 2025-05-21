@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use indextree::{Arena, NodeId};
 
 use crate::{
-    lexer::{Token, Tokens},
     nexus::{Nexus, NexusBlock},
+    tokens::{Token, Tokens},
     tree::{Tree, TreeNode},
 };
 

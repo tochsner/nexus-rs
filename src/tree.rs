@@ -36,21 +36,6 @@ impl<'a> TreeNode<'a> {
         TreeNode::Root { label: None }
     }
 
-    pub fn with_label(self, label: &'a str) -> Self {
-        match self {
-            TreeNode::Leaf { taxon, length, .. } => TreeNode::Leaf {
-                label,
-                taxon,
-                length,
-            },
-            TreeNode::InternalNode { length, .. } => TreeNode::InternalNode {
-                label: Some(label),
-                length,
-            },
-            TreeNode::Root { .. } => TreeNode::Root { label: Some(label) },
-        }
-    }
-
     pub fn with_length(self, length: f64) -> Self {
         match self {
             TreeNode::Leaf { label, taxon, .. } => TreeNode::Leaf {
