@@ -7,6 +7,12 @@ mod tests {
         parser::{Parser, ParsingError},
     };
 
+    impl<'a> Nexus<'a> {
+        pub fn new() -> Self {
+            Nexus { blocks: vec![] }
+        }
+    }
+
     #[test]
     fn test_empty_nexus() {
         let text = "#NEXUS";

@@ -2,6 +2,8 @@
 mod tests {
     use std::collections::HashMap;
 
+    use indextree::Arena;
+
     use crate::{
         lexer::Lexer,
         nexus::NexusBlock,
@@ -9,6 +11,16 @@ mod tests {
         tokens::Tokens,
         tree::{Tree, TreeNode},
     };
+
+    impl<'a> Tree<'a> {
+        pub fn new(name: &'a str, rooted: bool) -> Tree<'a> {
+            Tree {
+                tree: Arena::new(),
+                name,
+                rooted,
+            }
+        }
+    }
 
     #[test]
     fn test_simplest_tree_block_with_one_node() {

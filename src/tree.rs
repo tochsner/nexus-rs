@@ -58,13 +58,3 @@ pub struct Tree<'a> {
     pub name: &'a str,
     pub rooted: bool,
 }
-
-impl<'a> Tree<'a> {
-    pub fn new(name: &'a str, rooted: bool) -> Tree<'a> {
-        Tree {
-            tree: Arena::new(),
-            name,
-            rooted,
-        }
-    }
-}

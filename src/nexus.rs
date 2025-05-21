@@ -41,9 +41,6 @@ pub struct Nexus<'a> {
 }
 
 impl<'a> Nexus<'a> {
-    pub fn new() -> Self {
-        Nexus { blocks: vec![] }
-    }
     pub fn build(blocks: Vec<NexusBlock<'a>>) -> Result<Self, ParsingError> {
         let mut all_taxa: Vec<&'a str> = vec![];
         let mut all_translated_taxa: Vec<&'a str> = vec![];
