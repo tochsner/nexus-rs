@@ -97,7 +97,10 @@ impl<'a> Parser<'a> {
         while self.tokens.peek() != Some(&Token::EOS) {
             match self.parse_word() {
                 Ok(word) => labels.push(word),
-                _ => return Err(ParsingError::InvalidList),
+                a => {
+                    dbg!(a);
+                    return Err(ParsingError::InvalidList);
+                }
             }
             self.parse_and_ignore_whitespace();
         }
@@ -285,35 +288,23 @@ impl<'a> Parser<'a> {
     fn parse_uint(&mut self) -> Result<usize, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        let Some(Token::Integer(number)) = self.tokens.next() else {
-            return Err(ParsingError::InvalidNumber);
-        };
-
-        self.parse_and_ignore_whitespace();
-        Ok(*number as usize)
+        if let Some(Token::Integer(number)) = self.tokens.next() {
+            Ok(*number as usize)
+        } else {
+            Err(ParsingError::InvalidNumber)
+        }
     }
 
     fn parse_f64(&mut self) -> Result<f64, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        let number_start = self.tokens.cursor();
-
-        if Some(&Token::Punctuation(".")) != self.tokens.peek() {
-            self.tokens.next(); // the part before the decimal point
+        if let Some(Token::Integer(number)) = self.tokens.next() {
+            Ok(f64::from(*number))
+        } else if let Some(Token::Float(number)) = self.tokens.next() {
+            Ok(*number)
+        } else {
+            Err(ParsingError::InvalidNumber)
         }
-
-        if Some(&Token::Punctuation(".")) == self.tokens.peek() {
-            self.tokens.next(); // the decimal point
-            self.tokens.next(); // the decimal part
-        }
-
-        let number = self.tokens.slice_from(number_start);
-
-        let Ok(number) = number.parse() else {
-            return Err(ParsingError::InvalidNumber);
-        };
-
-        Ok(number)
     }
 
     fn parse_keyword(&mut self, expected_word: &str) -> Result<&'a str, ParsingError> {
@@ -333,32 +324,7 @@ impl<'a> Parser<'a> {
 
         match self.tokens.next() {
             Some(Token::Word(word)) => Ok(word),
-            // the next token is a quotation mark, we have a quoted word
-            Some(Token::Punctuation("'")) => {
-                let start_cursor = self.tokens.cursor();
-
-                loop {
-                    match self.tokens.next() {
-                        Some(Token::Punctuation("'")) => {
-                            // we have two cases:
-                            //      either, this is the final quotation mark,
-                            //      or, there is a pair of quotation marks
-                            if self.tokens.peek() == Some(&Token::Punctuation("'")) {
-                                self.tokens.next();
-                                continue;
-                            }
-
-                            // the word is finished, we return the word without the last quotation mark
-                            let concatenated_word = self
-                                .tokens
-                                .slice_from_to(start_cursor, self.tokens.cursor() - 1);
-                            return Ok(concatenated_word);
-                        }
-                        None => return Err(ParsingError::UnexpectedFileEnd),
-                        _ => continue,
-                    }
-                }
-            }
+            Some(Token::QuotedWord(word)) => Ok(word),
             Some(token) => Err(ParsingError::UnexpectedToken(token.to_string())),
             None => Err(ParsingError::UnexpectedFileEnd),
         }

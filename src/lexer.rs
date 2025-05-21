@@ -14,7 +14,7 @@ pub enum LexerToken {
     Punctuation,
     #[regex(r"[^\x00-\x06\t\n ()\[\]{}\/\\,;:=*'`<>~]+")]
     Word,
-    #[regex(r"'(?:[^\x00-\x06\t\n ()\[\]{}\/\\,;:=*'`<>~]|'')*'")]
+    #[regex(r"'(?:[^']|'')*'")]
     QuotedWord,
     #[regex(r"-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?", priority = 3)]
     // priority has to be higher than the one for Word
@@ -30,7 +30,7 @@ pub enum Token<'a> {
     Punctuation(&'a str),
     Word(&'a str),
     QuotedWord(&'a str),
-    Integer(i64),
+    Integer(i32),
     Float(f64),
 }
 
@@ -78,16 +78,14 @@ impl<'a> Lexer<'a> {
                     LexerToken::Word => Token::Word(slice),
                     LexerToken::QuotedWord => Token::QuotedWord(&slice[1..slice.len() - 1]),
                     LexerToken::Number => {
-                        if let Ok(number) = &slice.parse::<i64>() {
+                        if let Ok(number) = &slice.parse::<i32>() {
                             Token::Integer(*number)
                         } else {
                             Token::Float(slice.parse::<f64>().unwrap())
                         }
                     }
                 },
-                Err(_) => {
-                    panic!("Tokenization failed.")
-                }
+                Err(_) => panic!("Tokenization failed."),
             };
 
             tokens.push(token);
