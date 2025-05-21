@@ -140,11 +140,12 @@ mod tests {
         END;
 
         BEGIN trees;
-            TREE t1 = ((Apes: 1.0123, Humans:2):.10, Gorillas: 2.5e-3);
+            TREE t1 = ((Apes: 1.0123, Humans:2):0.10, Gorillas: 2.5e-3);
         END;
         ";
         let lexer = Lexer::new(text);
         let tokens = Tokens::new(&lexer);
+
         let mut parser = Parser::new(tokens);
         let result = parser.parse().unwrap();
 

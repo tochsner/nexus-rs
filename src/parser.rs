@@ -97,10 +97,7 @@ impl<'a> Parser<'a> {
         while self.tokens.peek() != Some(&Token::EOS) {
             match self.parse_word() {
                 Ok(word) => labels.push(word),
-                a => {
-                    dbg!(a);
-                    return Err(ParsingError::InvalidList);
-                }
+                _ => return Err(ParsingError::InvalidList),
             }
             self.parse_and_ignore_whitespace();
         }
@@ -298,12 +295,10 @@ impl<'a> Parser<'a> {
     fn parse_f64(&mut self) -> Result<f64, ParsingError> {
         self.parse_and_ignore_whitespace();
 
-        if let Some(Token::Integer(number)) = self.tokens.next() {
-            Ok(f64::from(*number))
-        } else if let Some(Token::Float(number)) = self.tokens.next() {
-            Ok(*number)
-        } else {
-            Err(ParsingError::InvalidNumber)
+        match self.tokens.next() {
+            Some(Token::Integer(number)) => Ok(f64::from(*number)),
+            Some(Token::Float(number)) => Ok(*number),
+            _ => Err(ParsingError::InvalidNumber),
         }
     }
 
@@ -315,7 +310,7 @@ impl<'a> Parser<'a> {
                 self.parse_and_ignore_whitespace();
                 Ok(word)
             }
-            _ => Err(ParsingError::MissingToken(String::from(expected_word))),
+            a => Err(ParsingError::MissingToken(String::from(expected_word))),
         }
     }
 

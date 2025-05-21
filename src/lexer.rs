@@ -1,5 +1,5 @@
 use logos::Logos;
-use std::fmt::Display;
+use std::{fmt::Display, ops::Range};
 
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos()]
@@ -50,28 +50,36 @@ impl Display for Token<'_> {
 }
 
 pub struct Lexer<'a> {
+    content: &'a str,
     tokens: Vec<Token<'a>>,
+    ranges: Vec<Range<usize>>,
 }
 
-impl Lexer<'_> {
+impl<'a> Lexer<'a> {
     pub fn get(&self, index: usize) -> Option<&Token> {
         self.tokens.get(index)
+    }
+    pub fn slice_from_to(&self, from_token: usize, to_token: usize) -> &'a str {
+        let start = self.ranges.get(from_token).unwrap().start;
+        let end = self.ranges.get(to_token - 1).unwrap().end;
+        &self.content[start..end]
     }
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str) -> Self {
-        let lexer = LexerToken::lexer(input).spanned();
+    pub fn new(content: &'a str) -> Self {
+        let lexer = LexerToken::lexer(content).spanned();
         let mut tokens = vec![];
+        let mut ranges = vec![];
 
         for (result, range) in lexer {
-            let slice = &input[range.clone()];
+            let slice = &content[range.clone()];
 
             let token = match result {
                 Ok(lexer_token) => match lexer_token {
                     LexerToken::EOS => Token::EOS,
                     LexerToken::Comment => Token::Comment(
-                        &input[range.clone()].trim_matches(|c| c == '[' || c == '#' || c == ']'),
+                        &content[range.clone()].trim_matches(|c| c == '[' || c == '#' || c == ']'),
                     ),
                     LexerToken::Whitespace => Token::Whitespace(slice),
                     LexerToken::Punctuation => Token::Punctuation(slice),
@@ -85,13 +93,21 @@ impl<'a> Lexer<'a> {
                         }
                     }
                 },
-                Err(_) => panic!("Tokenization failed."),
+                Err(_) => {
+                    dbg!(tokens);
+                    panic!("Tokenization failed.")
+                }
             };
 
             tokens.push(token);
+            ranges.push(range);
         }
 
-        Self { tokens }
+        Self {
+            content,
+            tokens,
+            ranges,
+        }
     }
 }
 
@@ -123,8 +139,7 @@ impl<'a> Tokens<'a> {
     }
 
     pub fn slice_from_to(&self, from: usize, to: usize) -> &'a str {
-        todo!("Needs fixing");
-        // &self.content[from..to]
+        self.lexer.slice_from_to(from, to)
     }
 }
 
