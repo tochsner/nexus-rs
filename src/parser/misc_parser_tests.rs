@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::tokens::Tokens;
     use crate::{
-        lexer::Lexer,
-        nexus::Nexus,
-        parser::{Parser, ParsingError},
+        lexer::{lexer::Lexer, tokens::Tokens},
+        parser::parser::{Parser, ParsingError},
+        types::nexus::Nexus,
     };
 
     impl<'a> Nexus<'a> {

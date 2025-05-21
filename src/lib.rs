@@ -1,18 +1,12 @@
 use std::fs;
 
-use lexer::Lexer;
-use parser::Parser;
-use tokens::Tokens;
+use lexer::{lexer::Lexer, tokens::Tokens};
+use parser::parser::Parser;
+use types::nexus::NexusBlock;
 
 mod lexer;
-mod misc_parser_tests;
-mod nexus;
 mod parser;
-mod taxa_parser_tests;
-mod tokens;
-mod translations_parser_tests;
-mod tree;
-mod trees_parser_tests;
+mod types;
 
 pub fn parse_file(path: &str) {
     let contents = fs::read_to_string(path).expect("Should have been able to read the file");
@@ -24,7 +18,7 @@ pub fn parse_file(path: &str) {
     let result = parser.parse().unwrap();
 
     for block in result.blocks {
-        if let nexus::NexusBlock::TreesBlock(_, trees) = block {
+        if let NexusBlock::TreesBlock(_, trees) = block {
             println!("{}", trees.len())
         }
     }

@@ -3,10 +3,9 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        lexer::Lexer,
-        nexus::NexusBlock,
-        parser::{Parser, ParsingError},
-        tokens::Tokens,
+        lexer::{lexer::Lexer, tokens::Tokens},
+        parser::parser::{Parser, ParsingError},
+        types::nexus::NexusBlock,
     };
 
     #[test]

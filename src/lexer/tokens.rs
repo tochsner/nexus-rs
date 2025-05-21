@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use logos::Logos;
 
-use crate::lexer::Lexer;
+use crate::lexer::lexer::Lexer;
 
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos()]

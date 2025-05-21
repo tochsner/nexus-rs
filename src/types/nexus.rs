@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{parser::ParsingError, tree::Tree};
+use crate::{parser::parser::ParsingError, types::tree::Tree};
 
 #[derive(PartialEq, Debug)]
 pub enum NexusBlock<'a> {

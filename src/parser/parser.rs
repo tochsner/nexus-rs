@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use indextree::{Arena, NodeId};
 
 use crate::{
-    nexus::{Nexus, NexusBlock},
-    tokens::{Token, Tokens},
-    tree::{Tree, TreeNode},
+    lexer::tokens::{Token, Tokens},
+    types::{
+        nexus::{Nexus, NexusBlock},
+        tree::{Tree, TreeNode},
+    },
 };
 
 #[derive(PartialEq, Debug)]

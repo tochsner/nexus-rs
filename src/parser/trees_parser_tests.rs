@@ -5,11 +5,12 @@ mod tests {
     use indextree::Arena;
 
     use crate::{
-        lexer::Lexer,
-        nexus::NexusBlock,
-        parser::Parser,
-        tokens::Tokens,
-        tree::{Tree, TreeNode},
+        lexer::{lexer::Lexer, tokens::Tokens},
+        parser::parser::Parser,
+        types::{
+            nexus::NexusBlock,
+            tree::{Tree, TreeNode},
+        },
     };
 
     impl<'a> Tree<'a> {

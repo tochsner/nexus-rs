@@ -1,4 +1,4 @@
-use crate::tokens::Token;
+use crate::lexer::tokens::Token;
 use logos::Logos;
 use std::ops::Range;
 
