@@ -6,7 +6,7 @@ mod tests {
 
     use crate::{
         lexer::{lexer::Lexer, tokens::Tokens},
-        parser::parser::Parser,
+        parser::parser::{Parser, ParsingError},
         types::{
             nexus::NexusBlock,
             tree::{Tree, TreeNode},
@@ -143,6 +143,31 @@ mod tests {
                 vec![t1_expected_tree, t2_expected_tree]
             ))
         );
+    }
+
+    #[test]
+    fn test_duplicate_tree_name() {
+        let text = "#NEXUS
+        BEGIN taxa;
+            DIMENSIONS ntax=3;
+            TAXLABELS Apes Humans Gorillas;
+        END;
+
+        BEGIN trees;
+            TREE t1 = ((Apes, Humans), Gorillas);
+            TREE t1 = (Apes, (Humans, Gorillas));
+        END;
+        ";
+        let lexer = Lexer::new(text);
+        let tokens = Tokens::new(&lexer);
+        let mut parser = Parser::new(tokens);
+        let result = parser.parse();
+
+        assert!(result.is_err());
+        assert!(matches!(
+            result.err().unwrap(),
+            ParsingError::DuplicateTreeNames
+        ));
     }
 
     #[test]

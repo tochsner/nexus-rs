@@ -26,6 +26,9 @@ pub enum ParsingError {
     // trees block
     DuplicateTranslations,
     TranslationForUnknownTaxa,
+    // tree parsing
+    MalformedTreeStructure,
+    DuplicateTreeNames,
 }
 
 pub struct Parser<'a> {
@@ -190,10 +193,10 @@ impl<'a> Parser<'a> {
         self.parse_keyword("TREE")?;
         let tree_name = self.parse_word()?;
         self.parse_punctuation("=")?;
-        let arena = self.parse_nexus()?;
+        let tree = self.parse_nexus()?;
         self.parse_eos()?;
         Ok(Tree {
-            tree: arena,
+            tree,
             name: tree_name,
             rooted: false,
         })
@@ -256,7 +259,7 @@ impl<'a> Parser<'a> {
             return Ok(leaf_node_id);
         }
 
-        Err(ParsingError::MissingEOS)
+        Err(ParsingError::MalformedTreeStructure)
     }
 
     // atomic parsers

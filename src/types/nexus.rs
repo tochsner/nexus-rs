@@ -31,6 +31,14 @@ impl<'a> NexusBlock<'a> {
             return Err(ParsingError::DuplicateTranslations);
         }
 
+        // verify that all tree names are unique
+        let mut unique_tree_names = trees.iter().map(|t| t.name).collect::<Vec<&str>>();
+        unique_tree_names.sort();
+        unique_tree_names.dedup();
+        if trees.len() != unique_tree_names.len() {
+            return Err(ParsingError::DuplicateTreeNames);
+        }
+
         Ok(NexusBlock::TreesBlock(translations, trees))
     }
 }
