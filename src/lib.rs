@@ -1,8 +1,8 @@
 use std::fs;
 
-use lexer::{lexer::Lexer, tokens::Tokens};
-use parser::parser::Parser;
-use types::nexus::NexusBlock;
+pub use lexer::{lexer::Lexer, tokens::Tokens};
+pub use parser::parser::Parser;
+pub use types::nexus::{Nexus, NexusBlock};
 
 mod lexer;
 mod parser;
