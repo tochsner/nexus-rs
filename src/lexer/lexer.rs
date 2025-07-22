@@ -29,22 +29,6 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn get(&self, index: usize) -> Option<&Token> {
-        self.tokens.get(index)
-    }
-    pub fn slice_from_to(&self, from_token: usize, to_token: usize) -> &'a str {
-        let start = self.ranges.get(from_token).unwrap().start;
-        let end = self.ranges.get(to_token - 1).unwrap().end;
-        &self.content[start..end]
-    }
-    pub fn slice(&self, token: usize) -> &'a str {
-        let start = self.ranges.get(token).unwrap().start;
-        let end = self.ranges.get(token).unwrap().end;
-        &self.content[start..end]
-    }
-}
-
-impl<'a> Lexer<'a> {
     pub fn new(content: &'a str) -> Self {
         let lexer = LexerToken::lexer(content).spanned();
         let mut tokens = vec![];
@@ -86,5 +70,19 @@ impl<'a> Lexer<'a> {
             tokens,
             ranges,
         }
+    }
+
+    pub fn get(&self, index: usize) -> Option<&Token> {
+        self.tokens.get(index)
+    }
+    pub fn slice_from_to(&self, from_token: usize, to_token: usize) -> &'a str {
+        let start = self.ranges.get(from_token).unwrap().start;
+        let end = self.ranges.get(to_token - 1).unwrap().end;
+        &self.content[start..end]
+    }
+    pub fn slice(&self, token: usize) -> &'a str {
+        let start = self.ranges.get(token).unwrap().start;
+        let end = self.ranges.get(token).unwrap().end;
+        &self.content[start..end]
     }
 }
