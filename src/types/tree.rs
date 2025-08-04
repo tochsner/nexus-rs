@@ -1,25 +1,25 @@
 use indextree::Arena;
 
 #[derive(PartialEq, Debug)]
-pub enum TreeNode<'a> {
+pub enum TreeNode {
     Leaf {
-        label: &'a str,
-        taxon: &'a str,
+        label: String,
+        taxon: String,
         length: Option<f64>,
     },
     InternalNode {
-        label: Option<&'a str>,
+        label: Option<String>,
         length: Option<f64>,
     },
     Root {
-        label: Option<&'a str>,
+        label: Option<String>,
     },
 }
 
-impl<'a> TreeNode<'a> {
-    pub fn new_leaf(taxon: &'a str) -> Self {
+impl TreeNode {
+    pub fn new_leaf(taxon: String) -> Self {
         TreeNode::Leaf {
-            label: taxon,
+            label: taxon.to_string(),
             taxon,
             length: None,
         }
@@ -53,8 +53,8 @@ impl<'a> TreeNode<'a> {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct Tree<'a> {
-    pub tree: Arena<TreeNode<'a>>,
-    pub name: &'a str,
+pub struct Tree {
+    pub tree: Arena<TreeNode>,
+    pub name: String,
     pub rooted: bool,
 }

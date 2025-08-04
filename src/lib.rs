@@ -8,7 +8,7 @@ mod lexer;
 mod parser;
 mod types;
 
-pub fn parse_file(path: &str) {
+pub fn parse_file(path: &str) -> Nexus {
     let contents = fs::read_to_string(path).expect("Should have been able to read the file");
 
     let lexer = Lexer::new(&contents);
@@ -17,9 +17,5 @@ pub fn parse_file(path: &str) {
     let mut parser = Parser::new(tokens);
     let result = parser.parse().unwrap();
 
-    for block in result.blocks {
-        if let NexusBlock::TreesBlock(_, trees) = block {
-            println!("{}", trees.len())
-        }
-    }
+    result
 }

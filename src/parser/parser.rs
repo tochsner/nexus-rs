@@ -43,7 +43,7 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> Result<Nexus, ParsingError> {
         self.parse_nexus_tag()?;
 
-        let mut blocks: Vec<NexusBlock<'a>> = vec![];
+        let mut blocks: Vec<NexusBlock> = vec![];
         while let Some(block) = self.parse_block()? {
             blocks.push(block);
         }
@@ -56,7 +56,7 @@ impl<'a> Parser<'a> {
             .map_err(|_| ParsingError::MissingNexusTag)
     }
 
-    fn parse_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
+    fn parse_block(&mut self) -> Result<Option<NexusBlock>, ParsingError> {
         self.parse_and_ignore_whitespace();
 
         if self.tokens.peek().is_none() {
@@ -77,7 +77,7 @@ impl<'a> Parser<'a> {
 
     // taxa block parsing
 
-    fn parse_taxa_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
+    fn parse_taxa_block(&mut self) -> Result<Option<NexusBlock>, ParsingError> {
         self.parse_eos()?;
 
         self.parse_keyword("Dimensions")?;
@@ -87,7 +87,11 @@ impl<'a> Parser<'a> {
         self.parse_eos()?;
 
         self.parse_keyword("TaxLabels")?;
-        let taxa_labels = self.parse_words()?;
+        let taxa_labels = self
+            .parse_words()?
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
         self.parse_eos()?;
 
         self.parse_keyword("end")?;
@@ -112,7 +116,7 @@ impl<'a> Parser<'a> {
 
     // trees block parsing
 
-    fn parse_trees_block(&mut self) -> Result<Option<NexusBlock<'a>>, ParsingError> {
+    fn parse_trees_block(&mut self) -> Result<Option<NexusBlock>, ParsingError> {
         self.parse_eos()?;
 
         let translations = self.parse_taxa_translations()?;
@@ -124,7 +128,7 @@ impl<'a> Parser<'a> {
         Ok(Some(NexusBlock::build_trees_block(translations, trees)?))
     }
 
-    fn parse_taxa_translations(&mut self) -> Result<HashMap<&'a str, &'a str>, ParsingError> {
+    fn parse_taxa_translations(&mut self) -> Result<HashMap<String, String>, ParsingError> {
         if self.try_parser(|s| s.parse_keyword("Translate")).is_err() {
             return Ok(HashMap::new());
         }
@@ -153,7 +157,10 @@ impl<'a> Parser<'a> {
                         Ok(taxa_name)
                     }) {
                         if translations
-                            .insert(translated_taxa_name, actual_taxa_name)
+                            .insert(
+                                translated_taxa_name.to_string(),
+                                actual_taxa_name.to_string(),
+                            )
                             .is_some()
                         {
                             // there is already a translation with this key
@@ -169,7 +176,10 @@ impl<'a> Parser<'a> {
                         s.parse_punctuation(",")?;
                         Ok(taxa_name)
                     }) {
-                        translations.insert(translated_taxa_name, actual_taxa_name);
+                        translations.insert(
+                            translated_taxa_name.to_string(),
+                            actual_taxa_name.to_string(),
+                        );
                         translation_start = self.tokens.cursor();
                     }
                 }
@@ -179,7 +189,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_trees(&mut self) -> Result<Vec<Tree<'a>>, ParsingError> {
+    fn parse_trees(&mut self) -> Result<Vec<Tree>, ParsingError> {
         let mut trees = vec![];
 
         while let Ok(tree) = self.try_parser(|s| s.parse_tree()) {
@@ -189,7 +199,7 @@ impl<'a> Parser<'a> {
         Ok(trees)
     }
 
-    fn parse_tree(&mut self) -> Result<Tree<'a>, ParsingError> {
+    fn parse_tree(&mut self) -> Result<Tree, ParsingError> {
         self.parse_keyword("TREE")?;
         let tree_name = self.parse_word()?;
         self.parse_punctuation("=")?;
@@ -197,12 +207,12 @@ impl<'a> Parser<'a> {
         self.parse_eos()?;
         Ok(Tree {
             tree,
-            name: tree_name,
+            name: tree_name.to_string(),
             rooted: false,
         })
     }
 
-    fn parse_nexus(&mut self) -> Result<Arena<TreeNode<'a>>, ParsingError> {
+    fn parse_nexus(&mut self) -> Result<Arena<TreeNode>, ParsingError> {
         self.parse_and_ignore_whitespace();
 
         let mut arena = Arena::new();
@@ -213,7 +223,7 @@ impl<'a> Parser<'a> {
 
     fn parse_nexus_subtree(
         &mut self,
-        arena: &mut Arena<TreeNode<'a>>,
+        arena: &mut Arena<TreeNode>,
         is_root: bool,
     ) -> Result<NodeId, ParsingError> {
         if self.try_parser(|s| s.parse_punctuation("(")).is_ok() {
@@ -244,7 +254,7 @@ impl<'a> Parser<'a> {
         }
 
         if let Ok(taxon) = self.try_parser(|s| s.parse_word()) {
-            let leaf = TreeNode::new_leaf(taxon);
+            let leaf = TreeNode::new_leaf(taxon.to_string());
 
             let leaf = match self.try_parser(|s| {
                 s.parse_punctuation(":")?;
