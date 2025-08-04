@@ -35,13 +35,16 @@ mod tests {
             Some(&NexusBlock::TreesBlock(
                 HashMap::from([
                     (
-                        "some very arbitrary text & some weird symbols cool:",
-                        "Apes"
+                        "some very arbitrary text & some weird symbols cool:".to_string(),
+                        "Apes".to_string()
                     ),
-                    ("some other arbitrary text + some other symbols-", "Humans"),
-                    ("Gorilla", "Gorilla 1"),
-                    ("Gorilla2", "Gorilla, 2;"),
-                    ("Schimpansen", "Chimpanz''ee"),
+                    (
+                        "some other arbitrary text + some other symbols-".to_string(),
+                        "Humans".to_string()
+                    ),
+                    ("Gorilla".to_string(), "Gorilla 1".to_string()),
+                    ("Gorilla2".to_string(), "Gorilla, 2;".to_string()),
+                    ("Schimpansen".to_string(), "Chimpanz''ee".to_string()),
                 ]),
                 vec![]
             ))
@@ -69,12 +72,15 @@ mod tests {
             Some(&NexusBlock::TreesBlock(
                 HashMap::from([
                     (
-                        "some very arbitrary text & some weird symbols cool:",
-                        "Apes"
+                        "some very arbitrary text & some weird symbols cool:".to_string(),
+                        "Apes".to_string()
                     ),
-                    ("some other arbitrary text + some other symbols-", "Humans"),
-                    ("Gorilla", "Gorilla"),
-                    ("Schimpansen", "Chimpanz''ee"),
+                    (
+                        "some other arbitrary text + some other symbols-".to_string(),
+                        "Humans".to_string()
+                    ),
+                    ("Gorilla".to_string(), "Gorilla".to_string()),
+                    ("Schimpansen".to_string(), "Chimpanz''ee".to_string()),
                 ]),
                 vec![]
             ))
@@ -105,7 +111,12 @@ mod tests {
         assert_eq!(
             result.blocks.get(1),
             Some(&NexusBlock::TreesBlock(
-                HashMap::from([("0", "1"), ("1", "2"), ("2", "3"), ("3", "4"),]),
+                HashMap::from([
+                    ("0".to_string(), "1".to_string()),
+                    ("1".to_string(), "2".to_string()),
+                    ("2".to_string(), "3".to_string()),
+                    ("3".to_string(), "4".to_string()),
+                ]),
                 vec![]
             ))
         );
@@ -131,8 +142,8 @@ mod tests {
             result.blocks.get(1),
             Some(&NexusBlock::TreesBlock(
                 HashMap::from([(
-                    "some very arbitrary text & some weird symbols cool:",
-                    "Apes"
+                    "some very arbitrary text & some weird symbols cool:".to_string(),
+                    "Apes".to_string()
                 ),]),
                 vec![]
             ))
@@ -212,7 +223,10 @@ mod tests {
         let result = parser.parse().unwrap();
         assert_eq!(
             result.blocks.get(1),
-            Some(&NexusBlock::TreesBlock(HashMap::from([]), vec![]))
+            Some(&NexusBlock::TreesBlock(
+                HashMap::<String, String>::from([]),
+                vec![]
+            ))
         );
     }
 }

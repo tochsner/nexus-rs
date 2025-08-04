@@ -21,7 +21,13 @@ mod tests {
             Ok(Nexus {
                 blocks: vec![NexusBlock::TaxaBlock(
                     5,
-                    vec!["Apes", "Humans", "Gor", "Gor''illas", "Gor''ill''as"]
+                    vec![
+                        "Apes".to_string(),
+                        "Humans".to_string(),
+                        "Gor".to_string(),
+                        "Gor''illas".to_string(),
+                        "Gor''ill''as".to_string()
+                    ]
                 )]
             })
         );
@@ -48,7 +54,13 @@ mod tests {
             Ok(Nexus {
                 blocks: vec![NexusBlock::TaxaBlock(
                     5,
-                    vec!["Apes", "Humans", "Gor", "Gor''illas", "Gor''ill''as"]
+                    vec![
+                        "Apes".to_string(),
+                        "Humans".to_string(),
+                        "Gor".to_string(),
+                        "Gor''illas".to_string(),
+                        "Gor''ill''as".to_string()
+                    ]
                 )]
             })
         );
@@ -158,7 +170,11 @@ mod tests {
             Ok(Nexus {
                 blocks: vec![NexusBlock::TaxaBlock(
                     3,
-                    vec!["Species@1", "Species#2", "Species$3"]
+                    vec![
+                        "Species@1".to_string(),
+                        "Species#2".to_string(),
+                        "Species$3".to_string()
+                    ]
                 )]
             })
         );
@@ -177,7 +193,10 @@ mod tests {
         assert_eq!(
             parser.parse(),
             Ok(Nexus {
-                blocks: vec![NexusBlock::TaxaBlock(2, vec!["Species 1", "Species 2"])]
+                blocks: vec![NexusBlock::TaxaBlock(
+                    2,
+                    vec!["Species 1".to_string(), "Species 2".to_string()]
+                )]
             })
         );
     }

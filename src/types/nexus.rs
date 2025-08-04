@@ -50,25 +50,25 @@ pub struct Nexus {
 
 impl Nexus {
     pub fn build(blocks: Vec<NexusBlock>) -> Result<Self, ParsingError> {
-        // let mut all_taxa: Vec<String> = vec![];
-        // let mut all_translated_taxa: Vec<String> = vec![];
-        // for block in &blocks {
-        //     if let NexusBlock::TaxaBlock(_, taxa) = block {
-        //         // all_taxa.extend(*taxa);
-        //     } else if let NexusBlock::TreesBlock(translations, _) = block {
-        //         all_translated_taxa.extend(translations.values().map(|t| t.to_string()));
-        //     }
-        // }
+        let mut all_taxa: Vec<String> = vec![];
+        let mut all_translated_taxa: Vec<String> = vec![];
+        for block in &blocks {
+            if let NexusBlock::TaxaBlock(_, taxa) = block {
+                all_taxa.extend(taxa.iter().cloned());
+            } else if let NexusBlock::TreesBlock(translations, _) = block {
+                all_translated_taxa.extend(translations.values().map(|t| t.to_string()));
+            }
+        }
 
-        // // verify that only known taxa have translations
-        // let unknown_translated_taxa = all_translated_taxa
-        //     .iter()
-        //     .filter(|t| !all_taxa.contains(t))
-        //     .collect::<Vec<_>>();
-        // if !unknown_translated_taxa.is_empty() {
-        //     dbg!(all_translated_taxa.clone());
-        //     return Err(ParsingError::TranslationForUnknownTaxa);
-        // }
+        // verify that only known taxa have translations
+        let unknown_translated_taxa = all_translated_taxa
+            .iter()
+            .filter(|t| !all_taxa.contains(t))
+            .collect::<Vec<_>>();
+        if !unknown_translated_taxa.is_empty() {
+            dbg!(all_translated_taxa.clone());
+            return Err(ParsingError::TranslationForUnknownTaxa);
+        }
 
         Ok(Nexus { blocks })
     }

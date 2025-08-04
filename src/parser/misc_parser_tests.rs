@@ -6,7 +6,7 @@ mod tests {
         types::nexus::Nexus,
     };
 
-    impl<'a> Nexus<'a> {
+    impl<'a> Nexus {
         pub fn new() -> Self {
             Nexus { blocks: vec![] }
         }

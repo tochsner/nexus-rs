@@ -13,11 +13,11 @@ mod tests {
         },
     };
 
-    impl<'a> Tree<'a> {
-        pub fn new(name: &'a str, rooted: bool) -> Tree<'a> {
+    impl<'a> Tree {
+        pub fn new(name: &'a str, rooted: bool) -> Tree {
             Tree {
                 tree: Arena::new(),
-                name,
+                name: name.to_string(),
                 rooted,
             }
         }
@@ -41,7 +41,9 @@ mod tests {
         let result = parser.parse().unwrap();
 
         let mut expected_tree = Tree::new("t1", false);
-        expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
+        expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Apes".to_string()));
 
         assert_eq!(
             result.blocks.get(1),
@@ -68,10 +70,16 @@ mod tests {
 
         let mut expected_tree = Tree::new("t1", false);
 
-        let apes = expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
-        let humans = expected_tree.tree.new_node(TreeNode::new_leaf("Humans"));
+        let apes = expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Apes".to_string()));
+        let humans = expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Humans".to_string()));
         let apes_humans = expected_tree.tree.new_node(TreeNode::new_internal());
-        let gorillas = expected_tree.tree.new_node(TreeNode::new_leaf("Gorillas"));
+        let gorillas = expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Gorillas".to_string()));
         let apes_humans_gorillas = expected_tree.tree.new_node(TreeNode::new_root());
 
         apes_humans_gorillas.append(apes_humans, &mut expected_tree.tree);
@@ -106,12 +114,16 @@ mod tests {
 
         let mut t1_expected_tree = Tree::new("t1", false);
 
-        let t1_apes = t1_expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
-        let t1_humans = t1_expected_tree.tree.new_node(TreeNode::new_leaf("Humans"));
+        let t1_apes = t1_expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Apes".to_string()));
+        let t1_humans = t1_expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Humans".to_string()));
         let t1_apes_humans = t1_expected_tree.tree.new_node(TreeNode::new_internal());
         let t1_gorillas = t1_expected_tree
             .tree
-            .new_node(TreeNode::new_leaf("Gorillas"));
+            .new_node(TreeNode::new_leaf("Gorillas".to_string()));
         let t1_apes_humans_gorillas = t1_expected_tree.tree.new_node(TreeNode::new_root());
 
         t1_apes_humans_gorillas.append(t1_apes_humans, &mut t1_expected_tree.tree);
@@ -122,11 +134,15 @@ mod tests {
 
         let mut t2_expected_tree = Tree::new("t2", false);
 
-        let t2_apes = t2_expected_tree.tree.new_node(TreeNode::new_leaf("Apes"));
-        let t2_humans = t2_expected_tree.tree.new_node(TreeNode::new_leaf("Humans"));
+        let t2_apes = t2_expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Apes".to_string()));
+        let t2_humans = t2_expected_tree
+            .tree
+            .new_node(TreeNode::new_leaf("Humans".to_string()));
         let t2_gorillas = t2_expected_tree
             .tree
-            .new_node(TreeNode::new_leaf("Gorillas"));
+            .new_node(TreeNode::new_leaf("Gorillas".to_string()));
         let t2_humans_gorillas = t2_expected_tree.tree.new_node(TreeNode::new_internal());
         let t2_apes_humans_gorillas = t2_expected_tree.tree.new_node(TreeNode::new_root());
 
@@ -192,16 +208,16 @@ mod tests {
 
         let apes = expected_tree
             .tree
-            .new_node(TreeNode::new_leaf("Apes").with_length(1.0123));
+            .new_node(TreeNode::new_leaf("Apes".to_string()).with_length(1.0123));
         let humans = expected_tree
             .tree
-            .new_node(TreeNode::new_leaf("Humans").with_length(2.0));
+            .new_node(TreeNode::new_leaf("Humans".to_string()).with_length(2.0));
         let apes_humans = expected_tree
             .tree
             .new_node(TreeNode::new_internal().with_length(0.10));
         let gorillas = expected_tree
             .tree
-            .new_node(TreeNode::new_leaf("Gorillas").with_length(0.0025));
+            .new_node(TreeNode::new_leaf("Gorillas".to_string()).with_length(0.0025));
         let apes_humans_gorillas = expected_tree.tree.new_node(TreeNode::new_root());
 
         apes_humans_gorillas.append(apes_humans, &mut expected_tree.tree);
