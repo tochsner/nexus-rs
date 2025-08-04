@@ -1,6 +1,6 @@
 # Nexus Parser
 
-A fast, reliable, and correct parser for the NEXUS file format written in Rust. The library can also be used in python.
+A fast, reliable, and correct parser for the NEXUS file format written in Rust. The library can also be used as a normal python package, offering speed and convenience.
 
 ## 🔍 Overview
 
