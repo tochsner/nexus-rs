@@ -1,3 +1,4 @@
+use pyo3::prelude::*;
 use std::fs;
 
 pub use lexer::{lexer::Lexer, tokens::Tokens};
@@ -8,7 +9,8 @@ mod lexer;
 mod parser;
 mod types;
 
-pub fn parse_file(path: &str) -> Nexus {
+#[pyfunction]
+pub fn parse_file(path: &str) {
     let contents = fs::read_to_string(path).expect("Should have been able to read the file");
 
     let lexer = Lexer::new(&contents);
@@ -17,5 +19,12 @@ pub fn parse_file(path: &str) -> Nexus {
     let mut parser = Parser::new(tokens);
     let result = parser.parse().unwrap();
 
-    result
+    println!("{}", result.blocks.len());
+}
+
+#[pymodule]
+fn nexus(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(parse_file, m)?)?;
+
+    Ok(())
 }

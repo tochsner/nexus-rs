@@ -1,0 +1,35 @@
+version = 1
+revision = 1
+requires-python = ">=3.11"
+
+[[package]]
+name = "commonnexus"
+version = "1.9.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "newick" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/34/5e/b7fafce548ea433cc3abb0ae61787111d4678a8f3a7f1a12d0c1fed909b7/commonnexus-1.9.2.tar.gz", hash = "sha256:292da1cf4aeb0ab474a274235313f9dc64d8f489d7953163c5f6570f302583f3", size = 85959 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/fa/341a27987018b6431d3ce06c617ac024990e48f1e6e62035effc28e226b7/commonnexus-1.9.2-py2.py3-none-any.whl", hash = "sha256:24d0607f560097c007cd3eb90d97a26eb00fcd2b01dd09eec1d0f32cc40c4a86", size = 81354 },
+]
+
+[[package]]
+name = "newick"
+version = "1.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/7c/25e2d26429ac0313b289da44b446757ae40fe23c08dcc9eee5830071fec5/newick-1.10.0.tar.gz", hash = "sha256:16058c9162b05befca98423c03daaab0f7a614dd8404e0dea2e8a0c7f89a773e", size = 25362 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/bb/274ce2f6672b2e37bd707bf2cc8f5e6ec8b037f0a95be212fe6ac882722a/newick-1.10.0-py2.py3-none-any.whl", hash = "sha256:898dc96a459517107ae38f8a500d5d1fcb42d4ae74bfddf13d1ba6a159bab626", size = 15711 },
+]
+
+[[package]]
+name = "nexus"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "commonnexus" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "commonnexus", specifier = ">=1.9.2" }]
