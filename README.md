@@ -8,7 +8,7 @@ This library provides a robust implementation for parsing NEXUS files, a common 
 
 ## ✨ Features
 
-- **🚀 High Performance**: Optimized for speed without compromising accuracy (~10 times faster as the BEAST 2 parser and ~30 times faster than commonnexus)
+- **🚀 High Performance**: Optimized for speed without compromising accuracy (~10 times faster than the BEAST 2 parser and ~30 times faster than commonnexus)
 - **📚 Standard-Compliant**: Fully compliant with the NEXUS file format specification
 - **💾 Memory Efficient**: Minimizes memory usage even with large datasets
 
